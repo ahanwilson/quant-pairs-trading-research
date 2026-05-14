@@ -9,7 +9,9 @@ description = "Cointegration-based pairs trading strategy quant research skeleto
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+  "pandas>=2.2",
   "PyYAML>=6.0",
+  "yfinance>=0.2",
 ]
 
 [project.optional-dependencies]
@@ -18,7 +20,6 @@ dev = [
 ]
 research = [
   "numpy>=1.26",
-  "pandas>=2.2",
   "scipy>=1.12",
   "statsmodels>=0.14",
   "scikit-learn>=1.4",

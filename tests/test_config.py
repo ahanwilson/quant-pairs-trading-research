@@ -16,8 +16,14 @@ def test_load_config_from_repository_root() -> None:
     config = load_config(PROJECT_ROOT / "config.yaml")
 
     assert config["project"]["name"] == "quant-pairs-trading-research"
+    assert config["data"]["source"] == "yfinance"
     assert str(config["data"]["start_date"]) == "2008-01-01"
     assert str(config["data"]["end_date"]) == "2025-12-31"
+    assert config["data"]["price_field"] == "adjusted_close"
+    assert config["data"]["cache_enabled"]
+    assert config["data"]["raw_dir"] == "data/raw"
+    assert config["data"]["processed_dir"] == "data/processed"
+    assert config["data"]["validation"]["report_dir"] == "results/data"
     assert str(config["walk_forward"]["initial_train_start"]) == "2008-01-01"
     assert str(config["walk_forward"]["initial_train_end"]) == "2018-12-31"
     assert str(config["walk_forward"]["validation_start"]) == "2019-01-01"

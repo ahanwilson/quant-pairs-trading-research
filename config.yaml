@@ -4,6 +4,8 @@ project:
   report_type: strategy_quant_research_report
 
 data:
+  source: yfinance
+  tickers: []
   start_date: 2008-01-01
   end_date: 2025-12-31
   frequency: daily
@@ -11,6 +13,19 @@ data:
   ohlcv_required: true
   raw_dir: data/raw
   processed_dir: data/processed
+  cache_enabled: true
+  validation:
+    report_dir: results/data
+    min_history_days: 252
+    max_missing_fraction: 0.10
+    required_columns:
+      - date
+      - open
+      - high
+      - low
+      - close
+      - adjusted_close
+      - volume
 
 walk_forward:
   initial_train_start: 2008-01-01

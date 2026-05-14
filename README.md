@@ -15,12 +15,12 @@ This initial skeleton includes:
 - Placeholder subpackages for data, universe, pairs, spreads, features, models, signals, backtest, analytics, robustness, regimes, and reporting.
 - A config loader in `quant_pairs.config`.
 - A guarded `scripts/run_full_research.py` entry point.
+- A data ingestion and validation entry point in `scripts/run_data_pipeline.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
-- Data downloading or vendor integrations.
 - Universe ingestion.
 - Pair selection and cointegration testing.
 - Spread construction.
@@ -57,6 +57,30 @@ python scripts/run_full_research.py --config config.yaml
 ```
 
 The runner currently validates that the config can be loaded and then exits. It does not run the research pipeline yet.
+
+## Run Data Pipeline
+
+The v1 data pipeline uses `yfinance` to download daily OHLCV data for tickers listed in `config.yaml`.
+
+Edit `data.tickers` before running:
+
+```yaml
+data:
+  source: yfinance
+  tickers:
+    - AAPL
+    - MSFT
+```
+
+Then run:
+
+```powershell
+python scripts/run_data_pipeline.py --config config.yaml
+```
+
+Raw downloaded files are cached under `data/raw/`. Cleaned and validated files are written under `data/processed/`. Validation reports are written under `results/data/`.
+
+The pipeline validates required OHLCV fields, adjusted close availability, duplicate dates, zero volume days, non-positive prices, sufficient history, and excessive missing observations. Tests use synthetic data and do not require internet access.
 
 ## Config Defaults
 
