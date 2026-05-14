@@ -16,12 +16,12 @@ This initial skeleton includes:
 - A config loader in `quant_pairs.config`.
 - A guarded `scripts/run_full_research.py` entry point.
 - A data ingestion and validation entry point in `scripts/run_data_pipeline.py`.
+- A universe construction entry point in `scripts/run_universe_construction.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
-- Universe ingestion.
 - Pair selection and cointegration testing.
 - Spread construction.
 - Feature engineering.
@@ -81,6 +81,32 @@ python scripts/run_data_pipeline.py --config config.yaml
 Raw downloaded files are cached under `data/raw/`. Cleaned and validated files are written under `data/processed/`. Validation reports are written under `results/data/`.
 
 The pipeline validates required OHLCV fields, adjusted close availability, duplicate dates, zero volume days, non-positive prices, sufficient history, and excessive missing observations. Tests use synthetic data and do not require internet access.
+
+## Run Universe Construction
+
+The v1 universe defaults to current S&P 500 constituents loaded from:
+
+```text
+data/universe/sp500_constituents.csv
+```
+
+Create that CSV with these columns:
+
+```csv
+ticker,company_name,sector,industry
+```
+
+Then make sure processed price data exists under `data/processed/`, typically by running the data pipeline first for the desired tickers.
+
+Run:
+
+```powershell
+python scripts/run_universe_construction.py --config config.yaml
+```
+
+The clean tradable universe is written to `results/universe/clean_universe.csv`, and the audit report is written to `results/universe/universe_audit.csv`.
+
+Universe construction validates the constituent file, reports duplicate or blank tickers, reports missing sector or industry values, and applies config-driven tradability filters for adjusted close price, average daily dollar volume, missing data, zero-volume issues, and history length. This step does not perform pair selection, cointegration testing, spread construction, modeling, signals, backtesting, robustness analysis, regime analysis, or report generation.
 
 ## Config Defaults
 

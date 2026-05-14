@@ -42,8 +42,23 @@ walk_forward:
 
 universe:
   default: sp500_current_constituents
+  constituents_path: data/universe/sp500_constituents.csv
+  output_dir: results/universe
+  clean_universe_file: clean_universe.csv
+  audit_file: universe_audit.csv
+  required_columns:
+    - ticker
+    - company_name
+    - sector
+    - industry
   sector_pairing: same_sector
   acknowledge_survivorship_bias: true
+  filters:
+    min_adjusted_close_price: 5.0
+    min_average_daily_dollar_volume: 10000000
+    max_missing_data_ratio: 0.10
+    max_zero_volume_days: 0
+    min_history_days: 252
 
 pair_selection:
   min_return_correlation: 0.6

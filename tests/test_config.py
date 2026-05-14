@@ -36,6 +36,12 @@ def test_load_config_from_repository_root() -> None:
     assert config["walk_forward"]["pair_reselection_frequency"] == "annually"
     assert config["walk_forward"]["hedge_ratio_update_frequency"] == "quarterly"
     assert config["universe"]["default"] == "sp500_current_constituents"
+    assert config["universe"]["constituents_path"] == (
+        "data/universe/sp500_constituents.csv"
+    )
+    assert config["universe"]["output_dir"] == "results/universe"
+    assert config["universe"]["filters"]["min_adjusted_close_price"] == 5.0
+    assert config["universe"]["filters"]["min_history_days"] == 252
     assert "lstm" in config["models"]["enabled"]
 
 
