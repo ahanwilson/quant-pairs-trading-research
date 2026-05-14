@@ -49,6 +49,12 @@ def test_load_config_from_repository_root() -> None:
     assert config["spread"]["output_dir"] == "results/spreads"
     assert config["spread"]["default_z_score_window"] == 60
     assert config["spread"]["z_score_windows"] == [20, 60, 120]
+    assert config["features"]["output_dir"] == "results/features"
+    assert config["features"]["lag_all_features_days"] == 1
+    assert config["features"]["target"]["default"] == "next_day_spread"
+    assert "next_day_spread_change" in config["features"]["target"]["include"]
+    assert config["features"]["rolling_windows"]["spread_mean"] == 60
+    assert config["features"]["rolling_windows"]["momentum"] == 5
     assert "lstm" in config["models"]["enabled"]
 
 

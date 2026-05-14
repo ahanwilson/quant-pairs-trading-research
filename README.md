@@ -19,12 +19,12 @@ This initial skeleton includes:
 - A universe construction entry point in `scripts/run_universe_construction.py`.
 - A pair selection entry point in `scripts/run_pair_selection.py`.
 - A spread construction entry point in `scripts/run_spread_construction.py`.
+- A feature engineering entry point in `scripts/run_feature_engineering.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
-- Feature engineering.
 - Forecasting models.
 - Signal generation.
 - Backtesting.
@@ -143,6 +143,27 @@ Outputs are written under `results/spreads/`:
 - `zscores.csv`
 
 The spread definition is `log(P1) - beta * log(P2)`. Rolling z-score means and standard deviations are shifted by one trading day before z-scores are computed, so the z-score statistics do not use current-day or future spread values. This step does not train forecasting models, generate trading signals, run backtests, perform robustness or regime analysis, or generate reports.
+
+## Run Feature Engineering
+
+Feature engineering converts spread-stage outputs into supervised learning datasets:
+
+```powershell
+python scripts/run_feature_engineering.py --config config.yaml
+```
+
+By default, this step reads `results/spreads/spread_series.csv`, `results/spreads/zscores.csv`, `results/pairs/selected_pairs.csv`, and processed price/volume files from `data/processed/`.
+
+Outputs are written under `results/features/`:
+
+- `features_all.csv`
+- `features_train.csv`
+- `features_validation.csv`
+- `features_test.csv`
+- `features_holdout_2025.csv`
+- `feature_metadata.csv`
+
+Predictive columns include lagged spreads, lagged z-scores, rolling spread statistics, spread momentum, return differentials, rolling return correlations, and volume ratios. Optional market return and volatility-regime proxies are added only when a configured market proxy ticker is available in processed data. All predictive features are shifted by at least one trading day before the next-day spread target is attached, and split assignment is based on the next-day target date to avoid training on validation or holdout labels. This step does not train forecasting models, generate trading signals, run backtests, perform robustness or regime analysis, or generate reports.
 
 ## Config Defaults
 

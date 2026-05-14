@@ -93,6 +93,21 @@ spread:
 
 features:
   lag_all_features_days: 1
+  output_dir: results/features
+  features_all_file: features_all.csv
+  train_file: features_train.csv
+  validation_file: features_validation.csv
+  test_file: features_test.csv
+  holdout_file: features_holdout_2025.csv
+  metadata_file: feature_metadata.csv
+  drop_missing_rows: true
+  target:
+    default: next_day_spread
+    include:
+      - next_day_spread
+      - next_day_spread_change
+  lags:
+    - 1
   enabled:
     - lagged_spread
     - lagged_z_score
@@ -106,8 +121,13 @@ features:
     - volatility_regime_proxy
   rolling_windows:
     z_score: 60
+    spread_mean: 60
+    spread_volatility: 60
+    momentum: 5
     correlation: 60
     volatility: 60
+  market_proxy_ticker:
+  volatility_regime_window: 60
 
 models:
   enabled:
