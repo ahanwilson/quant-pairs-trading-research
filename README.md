@@ -20,12 +20,13 @@ This initial skeleton includes:
 - A pair selection entry point in `scripts/run_pair_selection.py`.
 - A spread construction entry point in `scripts/run_spread_construction.py`.
 - A feature engineering entry point in `scripts/run_feature_engineering.py`.
+- A baseline forecasting entry point in `scripts/run_forecasting_baselines.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
-- Forecasting models.
+- Advanced forecasting models such as XGBoost and LSTM.
 - Signal generation.
 - Backtesting.
 - Analytics, robustness, regimes, or report generation.
@@ -164,6 +165,22 @@ Outputs are written under `results/features/`:
 - `feature_metadata.csv`
 
 Predictive columns include lagged spreads, lagged z-scores, rolling spread statistics, spread momentum, return differentials, rolling return correlations, and volume ratios. Optional market return and volatility-regime proxies are added only when a configured market proxy ticker is available in processed data. All predictive features are shifted by at least one trading day before the next-day spread target is attached, and split assignment is based on the next-day target date to avoid training on validation or holdout labels. This step does not train forecasting models, generate trading signals, run backtests, perform robustness or regime analysis, or generate reports.
+
+## Run Forecasting Baselines
+
+Forecasting baselines train on engineered feature datasets and predict the next-day spread target:
+
+```powershell
+python scripts/run_forecasting_baselines.py --config config.yaml
+```
+
+By default, this step reads the split feature datasets from `results/features/`, uses `target_next_day_spread`, and exports:
+
+- `results/forecasts/predictions.csv`
+- `results/forecasts/forecasting_metrics.csv`
+- `results/forecasts/model_comparison.csv`
+
+The v1 baseline framework includes naive persistence, rolling mean, and per-pair ARIMA models. Validation, test, and 2025 holdout rows are not used for default model training. The optional `models.train_validation_for_test` flag can allow train+validation fitting for test forecasts, while the final 2025 holdout is never used for training. This is a simple split-based baseline, not a full walk-forward retraining engine. This step does not implement XGBoost, LSTM, trading signals, backtesting, robustness analysis, regime analysis, or report generation.
 
 ## Config Defaults
 

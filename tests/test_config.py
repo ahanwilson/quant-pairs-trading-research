@@ -56,6 +56,14 @@ def test_load_config_from_repository_root() -> None:
     assert config["features"]["rolling_windows"]["spread_mean"] == 60
     assert config["features"]["rolling_windows"]["momentum"] == 5
     assert "lstm" in config["models"]["enabled"]
+    assert config["models"]["forecasting_enabled"] == [
+        "naive_persistence",
+        "rolling_mean",
+        "arima",
+    ]
+    assert config["models"]["target_column"] == "target_next_day_spread"
+    assert config["models"]["rolling_mean"]["window"] == 20
+    assert config["models"]["arima"]["order"] == [1, 0, 0]
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:

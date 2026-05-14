@@ -142,6 +142,23 @@ models:
     - predict
     - predict_one_step
   validation: walk_forward
+  forecasting_enabled:
+    - naive_persistence
+    - rolling_mean
+    - arima
+  target_column: target_next_day_spread
+  output_dir: results/forecasts
+  predictions_file: predictions.csv
+  metrics_file: forecasting_metrics.csv
+  comparison_file: model_comparison.csv
+  train_validation_for_test: false
+  rolling_mean:
+    window: 20
+  arima:
+    order:
+      - 1
+      - 0
+      - 0
 
 signals:
   source: predicted_next_day_spread_z_score
