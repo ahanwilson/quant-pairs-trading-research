@@ -18,12 +18,12 @@ This initial skeleton includes:
 - A data ingestion and validation entry point in `scripts/run_data_pipeline.py`.
 - A universe construction entry point in `scripts/run_universe_construction.py`.
 - A pair selection entry point in `scripts/run_pair_selection.py`.
+- A spread construction entry point in `scripts/run_spread_construction.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
-- Spread construction.
 - Feature engineering.
 - Forecasting models.
 - Signal generation.
@@ -125,6 +125,24 @@ Outputs are written under `results/pairs/`:
 - `pair_diagnostics.csv`
 
 The selector generates same-sector candidates by default, filters on adjusted-close return correlation, runs Engle-Granger cointegration diagnostics, applies Benjamini-Hochberg FDR correction, estimates diagnostic half-life from the hedge-ratio-adjusted log spread, and ranks selected pairs. The ranking score is deterministic: 40% adjusted p-value quality, 25% correlation quality, 25% half-life quality, and 10% liquidity quality when liquidity is available. This step does not construct tradable spreads beyond diagnostics, train models, create signals, run backtests, perform robustness or regime analysis, or generate reports.
+
+## Run Spread Construction
+
+Spread construction uses selected pairs and processed adjusted-close prices:
+
+```powershell
+python scripts/run_spread_construction.py --config config.yaml
+```
+
+By default, this step reads `results/pairs/selected_pairs.csv`, estimates static OLS hedge ratios only on the initial training window, and applies those formation-window betas to the full available processed sample. Validation, test, and 2025 holdout data are not used for hedge-ratio estimation.
+
+Outputs are written under `results/spreads/`:
+
+- `spread_series.csv`
+- `spread_diagnostics.csv`
+- `zscores.csv`
+
+The spread definition is `log(P1) - beta * log(P2)`. Rolling z-score means and standard deviations are shifted by one trading day before z-scores are computed, so the z-score statistics do not use current-day or future spread values. This step does not train forecasting models, generate trading signals, run backtests, perform robustness or regime analysis, or generate reports.
 
 ## Config Defaults
 

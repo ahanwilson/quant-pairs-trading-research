@@ -81,6 +81,15 @@ spread:
   hedge_ratio_method: static_ols
   estimate_beta_on: formation_training_window_only
   allow_rolling_ols_robustness: true
+  output_dir: results/spreads
+  spread_series_file: spread_series.csv
+  diagnostics_file: spread_diagnostics.csv
+  zscores_file: zscores.csv
+  default_z_score_window: 60
+  z_score_windows:
+    - 20
+    - 60
+    - 120
 
 features:
   lag_all_features_days: 1

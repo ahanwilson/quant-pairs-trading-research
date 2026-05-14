@@ -46,6 +46,9 @@ def test_load_config_from_repository_root() -> None:
     assert config["pair_selection"]["output_dir"] == "results/pairs"
     assert config["pair_selection"]["fdr_alpha"] == 0.05
     assert config["pair_selection"]["min_overlap_days"] == 504
+    assert config["spread"]["output_dir"] == "results/spreads"
+    assert config["spread"]["default_z_score_window"] == 60
+    assert config["spread"]["z_score_windows"] == [20, 60, 120]
     assert "lstm" in config["models"]["enabled"]
 
 
