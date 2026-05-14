@@ -3,4 +3,5 @@ numpy>=1.26
 pandas>=2.2
 pytest>=8.0
 statsmodels>=0.14
+xgboost>=2.0
 yfinance>=0.2

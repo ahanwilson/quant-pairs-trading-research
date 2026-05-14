@@ -150,6 +150,16 @@ def _forecasting_config(
         target_column="target_next_day_spread",
         rolling_mean_window=rolling_window,
         arima_order=(1, 0, 0),
+        xgboost_params={
+            "n_estimators": 10,
+            "max_depth": 2,
+            "learning_rate": 0.1,
+            "subsample": 1.0,
+            "colsample_bytree": 1.0,
+            "random_state": 42,
+            "objective": "reg:squarederror",
+        },
+        xgboost_missing_feature_strategy="median",
         train_validation_for_test=train_validation_for_test,
     )
 

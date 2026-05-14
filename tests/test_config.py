@@ -60,10 +60,15 @@ def test_load_config_from_repository_root() -> None:
         "naive_persistence",
         "rolling_mean",
         "arima",
+        "xgboost",
     ]
     assert config["models"]["target_column"] == "target_next_day_spread"
     assert config["models"]["rolling_mean"]["window"] == 20
     assert config["models"]["arima"]["order"] == [1, 0, 0]
+    assert config["models"]["xgboost"]["n_estimators"] == 200
+    assert config["models"]["xgboost"]["max_depth"] == 3
+    assert config["models"]["xgboost"]["learning_rate"] == 0.05
+    assert config["models"]["xgboost"]["missing_feature_strategy"] == "median"
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:

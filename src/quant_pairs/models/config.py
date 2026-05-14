@@ -23,6 +23,8 @@ class ForecastingConfig:
     target_column: str
     rolling_mean_window: int
     arima_order: tuple[int, int, int]
+    xgboost_params: dict[str, Any]
+    xgboost_missing_feature_strategy: str
     train_validation_for_test: bool
 
     @classmethod
@@ -90,6 +92,10 @@ class ForecastingConfig:
             target_column=str(model_config.get("target_column", "target_next_day_spread")),
             rolling_mean_window=int(model_config.get("rolling_mean", {}).get("window", 20)),
             arima_order=arima_order,
+            xgboost_params=_xgboost_params(model_config.get("xgboost", {})),
+            xgboost_missing_feature_strategy=str(
+                model_config.get("xgboost", {}).get("missing_feature_strategy", "median")
+            ),
             train_validation_for_test=bool(
                 model_config.get("train_validation_for_test", False)
             ),
@@ -101,3 +107,20 @@ def _resolve_path(project_root: Path, configured_path: str | Path) -> Path:
     if path.is_absolute():
         return path
     return project_root / path
+
+
+def _xgboost_params(config: Mapping[str, Any]) -> dict[str, Any]:
+    params = {
+        key: value
+        for key, value in config.items()
+        if key != "missing_feature_strategy"
+    }
+    return {
+        "n_estimators": int(params.get("n_estimators", 200)),
+        "max_depth": int(params.get("max_depth", 3)),
+        "learning_rate": float(params.get("learning_rate", 0.05)),
+        "subsample": float(params.get("subsample", 0.8)),
+        "colsample_bytree": float(params.get("colsample_bytree", 0.8)),
+        "random_state": int(params.get("random_state", 42)),
+        "objective": str(params.get("objective", "reg:squarederror")),
+    }

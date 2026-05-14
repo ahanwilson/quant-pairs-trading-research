@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 import pandas as pd
 
@@ -20,6 +21,7 @@ from quant_pairs.models.metrics import (
     build_model_comparison,
     compute_forecasting_metrics,
 )
+from quant_pairs.models.xgboost_model import XGBoostForecastingModel
 
 
 PREDICTION_COLUMNS = [
@@ -52,8 +54,13 @@ class ForecastingResult:
 class ForecastingPipeline:
     """Train baseline models on allowed splits and export forecasts."""
 
-    def __init__(self, config: ForecastingConfig) -> None:
+    def __init__(
+        self,
+        config: ForecastingConfig,
+        model_factories: dict[str, Callable[[], ForecastingModel]] | None = None,
+    ) -> None:
         self.config = config
+        self.model_factories = model_factories or {}
 
     def run(self) -> ForecastingResult:
         splits = load_feature_splits(self.config)
@@ -107,6 +114,8 @@ class ForecastingPipeline:
 
     def _build_model(self, model_name: str) -> ForecastingModel:
         normalized = model_name.strip().lower()
+        if normalized in self.model_factories:
+            return self.model_factories[normalized]()
         if normalized == "naive_persistence":
             return NaivePersistenceModel(target_column=self.config.target_column)
         if normalized == "rolling_mean":
@@ -118,6 +127,12 @@ class ForecastingPipeline:
             return ARIMABaselineModel(
                 order=self.config.arima_order,
                 target_column=self.config.target_column,
+            )
+        if normalized == "xgboost":
+            return XGBoostForecastingModel(
+                params=self.config.xgboost_params,
+                target_column=self.config.target_column,
+                missing_feature_strategy=self.config.xgboost_missing_feature_strategy,
             )
         raise ValueError(f"Unsupported forecasting model: {model_name}")
 

@@ -16,6 +16,7 @@ from quant_pairs.models.pipeline import (
     ForecastingResult,
     build_forecasting_pipeline,
 )
+from quant_pairs.models.xgboost_model import XGBoostForecastingModel
 
 __all__ = [
     "ARIMABaselineModel",
@@ -25,6 +26,7 @@ __all__ = [
     "ForecastingResult",
     "NaivePersistenceModel",
     "RollingMeanBaselineModel",
+    "XGBoostForecastingModel",
     "build_forecasting_pipeline",
     "build_model_comparison",
     "compute_forecasting_metrics",

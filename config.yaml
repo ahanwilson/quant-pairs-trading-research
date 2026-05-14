@@ -146,6 +146,7 @@ models:
     - naive_persistence
     - rolling_mean
     - arima
+    - xgboost
   target_column: target_next_day_spread
   output_dir: results/forecasts
   predictions_file: predictions.csv
@@ -159,6 +160,15 @@ models:
       - 1
       - 0
       - 0
+  xgboost:
+    n_estimators: 200
+    max_depth: 3
+    learning_rate: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    random_state: 42
+    objective: reg:squarederror
+    missing_feature_strategy: median
 
 signals:
   source: predicted_next_day_spread_z_score

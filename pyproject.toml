@@ -13,6 +13,7 @@ dependencies = [
   "pandas>=2.2",
   "PyYAML>=6.0",
   "statsmodels>=0.14",
+  "xgboost>=2.0",
   "yfinance>=0.2",
 ]
 
