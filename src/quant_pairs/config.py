@@ -13,6 +13,7 @@ DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config.yaml"
 REQUIRED_TOP_LEVEL_KEYS = (
     "project",
     "data",
+    "walk_forward",
     "universe",
     "pair_selection",
     "spread",
@@ -62,7 +63,31 @@ def validate_config(config: Mapping[str, Any]) -> dict[str, Any]:
         if key not in data_config:
             raise ConfigError(f"Config key 'data.{key}' is required.")
 
+    if str(data_config["start_date"]) != "2008-01-01":
+        raise ConfigError("Config data.start_date must remain 2008-01-01.")
+
     if str(data_config["end_date"]) != "2025-12-31":
         raise ConfigError("Config data.end_date must remain 2025-12-31.")
+
+    walk_forward_config = config["walk_forward"]
+    if not isinstance(walk_forward_config, Mapping):
+        raise ConfigError("Config key 'walk_forward' must be a mapping.")
+
+    required_walk_forward_keys = (
+        "initial_train_start",
+        "initial_train_end",
+        "validation_start",
+        "validation_end",
+        "test_start",
+        "test_end",
+        "final_holdout_start",
+        "final_holdout_end",
+        "retrain_frequency",
+        "pair_reselection_frequency",
+        "hedge_ratio_update_frequency",
+    )
+    for key in required_walk_forward_keys:
+        if key not in walk_forward_config:
+            raise ConfigError(f"Config key 'walk_forward.{key}' is required.")
 
     return dict(config)

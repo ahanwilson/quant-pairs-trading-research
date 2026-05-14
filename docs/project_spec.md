@@ -1,14 +1,8 @@
 \# Cointegration-Based Pairs Trading Strategy Quant Research Project
 
-
-
 \## Project Type
 
-
-
 This is a complete strategy quant research project, not an academic replication paper.
-
-
 
 Do not include:
 
@@ -22,49 +16,47 @@ Do not include:
 
 \- Paper-style theoretical survey
 
-
-
 The final output should be a complete strategy research report focused on implementation, testing, backtesting, risk, robustness, and deployment considerations.
-
-
 
 \## Objective
 
-
-
 Build a full Python research pipeline for a cointegration-based pairs trading strategy.
-
-
 
 The project should evaluate whether forecasting models improve pairs trading performance when used to predict hedge-ratio-adjusted spreads.
 
-
-
 \## Data Period
-
-
 
 Use daily equity OHLCV data from:
 
-
-
-\- Start date: 2008-03-01
+\- Start date: 2008-01-01
 
 \- End date: 2025-12-31
 
-
-
 Use adjusted close prices for return and spread calculations.
 
+\## Walk-Forward Defaults
 
+Use the following default research windows:
+
+\- Initial training: 2008-01-01 through 2018-12-31
+
+\- Validation: 2019-01-01 through 2021-12-31
+
+\- Test: 2022-01-01 through 2024-12-31
+
+\- Final holdout: 2025-01-01 through 2025-12-31
+
+Default retraining and update cadence:
+
+\- Retrain frequency: quarterly
+
+\- Pair reselection frequency: annually
+
+\- Hedge ratio update frequency: quarterly
 
 \## Universe
 
-
-
 Use S\&P 500 current constituents as the default v1 research universe.
-
-
 
 Reason:
 
@@ -76,15 +68,9 @@ Reason:
 
 \- Suitable for a complete strategy research project
 
-
-
 The project should acknowledge survivorship bias in the final report.
 
-
-
 \## Core Research Design
-
-
 
 1\. Load equity universe.
 
@@ -126,11 +112,7 @@ The project should acknowledge survivorship bias in the final report.
 
 20\. Generate final strategy quant research report.
 
-
-
 \## Pair Selection
-
-
 
 Use:
 
@@ -146,45 +128,27 @@ Use:
 
 \- Top N pairs selected from config
 
-
-
 Avoid look-ahead bias:
 
 \- Pair selection must use only the formation/training window.
 
-
-
 \## Spread Definition
-
-
 
 Use log-price hedge-ratio-adjusted spread:
 
-
-
 spread\_t = log(P1\_t) - beta \* log(P2\_t)
-
-
 
 Default beta estimation:
 
 \- Static OLS hedge ratio estimated on formation/training window only.
 
-
-
 Optional robustness:
 
 \- Rolling OLS hedge ratio.
 
-
-
 Do not use simple raw price difference as the main spread definition.
 
-
-
 \## Features
-
-
 
 Use compact, economically meaningful features:
 
@@ -208,23 +172,13 @@ Use compact, economically meaningful features:
 
 \- volatility regime proxy
 
-
-
 All features must be lagged by at least one trading day.
-
-
 
 No feature may use future information.
 
-
-
 \## Models
 
-
-
 Implement these models:
-
-
 
 1\. Naive persistence baseline
 
@@ -238,8 +192,6 @@ Implement these models:
 
 6\. LSTM
 
-
-
 Every model should expose:
 
 \- fit()
@@ -248,15 +200,9 @@ Every model should expose:
 
 \- predict\_one\_step()
 
-
-
 \## Signal Rules
 
-
-
 Use predicted next-day spread z-score.
-
-
 
 Default rules:
 
@@ -268,21 +214,13 @@ Default rules:
 
 \- Max holding days: 60
 
-
-
 Position sizing:
 
 \- Hedge-ratio-aware dollar-neutral sizing.
 
-
-
 \## Backtest
 
-
-
 Use a walk-forward out-of-sample backtest.
-
-
 
 Include:
 
@@ -308,11 +246,7 @@ Include:
 
 \- turnover
 
-
-
 \## Performance Metrics
-
-
 
 Compute:
 
@@ -342,11 +276,7 @@ Compute:
 
 \- number of trades
 
-
-
 \## Robustness Tests
-
-
 
 Test:
 
@@ -360,11 +290,7 @@ Test:
 
 \- top\_n\_pairs: 5, 10, 20
 
-
-
 \## Regime Analysis
-
-
 
 Include:
 
@@ -384,15 +310,9 @@ Include:
 
 \- 2025 out-of-sample extension
 
-
-
 \## Final Report
 
-
-
 Generate a strategy quant research report in Markdown and optionally HTML.
-
-
 
 Report sections:
 
@@ -428,8 +348,6 @@ Report sections:
 
 16\. Conclusion
 
-
-
 Do not include:
 
 \- Literature Review
@@ -437,4 +355,3 @@ Do not include:
 \- References
 
 \- Academic citations
-

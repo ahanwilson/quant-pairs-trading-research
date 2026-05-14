@@ -4,13 +4,26 @@ project:
   report_type: strategy_quant_research_report
 
 data:
-  start_date: 2008-03-01
+  start_date: 2008-01-01
   end_date: 2025-12-31
   frequency: daily
   price_field: adjusted_close
   ohlcv_required: true
   raw_dir: data/raw
   processed_dir: data/processed
+
+walk_forward:
+  initial_train_start: 2008-01-01
+  initial_train_end: 2018-12-31
+  validation_start: 2019-01-01
+  validation_end: 2021-12-31
+  test_start: 2022-01-01
+  test_end: 2024-12-31
+  final_holdout_start: 2025-01-01
+  final_holdout_end: 2025-12-31
+  retrain_frequency: quarterly
+  pair_reselection_frequency: annually
+  hedge_ratio_update_frequency: quarterly
 
 universe:
   default: sp500_current_constituents
