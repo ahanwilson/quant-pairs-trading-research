@@ -61,13 +61,20 @@ universe:
     min_history_days: 252
 
 pair_selection:
+  output_dir: results/pairs
+  candidate_pairs_file: candidate_pairs.csv
+  selected_pairs_file: selected_pairs.csv
+  diagnostics_file: pair_diagnostics.csv
+  same_sector_only: true
   min_return_correlation: 0.6
   cointegration_test: engle_granger
   multiple_testing_correction: benjamini_hochberg_fdr
+  fdr_alpha: 0.05
   half_life_min_days: 2
   half_life_max_days: 60
   top_n_pairs: 10
   formation_window_days: 504
+  min_overlap_days: 504
 
 spread:
   definition: log_price_hedge_ratio_adjusted

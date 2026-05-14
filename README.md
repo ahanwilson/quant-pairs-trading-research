@@ -17,12 +17,12 @@ This initial skeleton includes:
 - A guarded `scripts/run_full_research.py` entry point.
 - A data ingestion and validation entry point in `scripts/run_data_pipeline.py`.
 - A universe construction entry point in `scripts/run_universe_construction.py`.
+- A pair selection entry point in `scripts/run_pair_selection.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
-- Pair selection and cointegration testing.
 - Spread construction.
 - Feature engineering.
 - Forecasting models.
@@ -107,6 +107,24 @@ python scripts/run_universe_construction.py --config config.yaml
 The clean tradable universe is written to `results/universe/clean_universe.csv`, and the audit report is written to `results/universe/universe_audit.csv`.
 
 Universe construction validates the constituent file, reports duplicate or blank tickers, reports missing sector or industry values, and applies config-driven tradability filters for adjusted close price, average daily dollar volume, missing data, zero-volume issues, and history length. This step does not perform pair selection, cointegration testing, spread construction, modeling, signals, backtesting, robustness analysis, regime analysis, or report generation.
+
+## Run Pair Selection
+
+Pair selection uses the clean universe and processed adjusted-close price data:
+
+```powershell
+python scripts/run_pair_selection.py --config config.yaml
+```
+
+By default, this step reads `results/universe/clean_universe.csv`, loads processed prices from `data/processed/`, and restricts selection diagnostics to the initial training window from `walk_forward.initial_train_start` through `walk_forward.initial_train_end`. Validation, test, and 2025 holdout data are not used for selecting pairs.
+
+Outputs are written under `results/pairs/`:
+
+- `candidate_pairs.csv`
+- `selected_pairs.csv`
+- `pair_diagnostics.csv`
+
+The selector generates same-sector candidates by default, filters on adjusted-close return correlation, runs Engle-Granger cointegration diagnostics, applies Benjamini-Hochberg FDR correction, estimates diagnostic half-life from the hedge-ratio-adjusted log spread, and ranks selected pairs. The ranking score is deterministic: 40% adjusted p-value quality, 25% correlation quality, 25% half-life quality, and 10% liquidity quality when liquidity is available. This step does not construct tradable spreads beyond diagnostics, train models, create signals, run backtests, perform robustness or regime analysis, or generate reports.
 
 ## Config Defaults
 

@@ -42,6 +42,10 @@ def test_load_config_from_repository_root() -> None:
     assert config["universe"]["output_dir"] == "results/universe"
     assert config["universe"]["filters"]["min_adjusted_close_price"] == 5.0
     assert config["universe"]["filters"]["min_history_days"] == 252
+    assert config["pair_selection"]["same_sector_only"]
+    assert config["pair_selection"]["output_dir"] == "results/pairs"
+    assert config["pair_selection"]["fdr_alpha"] == 0.05
+    assert config["pair_selection"]["min_overlap_days"] == 504
     assert "lstm" in config["models"]["enabled"]
 
 
