@@ -1,0 +1,144 @@
+project:
+  name: quant-pairs-trading-research
+  objective: cointegration_based_pairs_trading_strategy_research
+  report_type: strategy_quant_research_report
+
+data:
+  start_date: 2008-03-01
+  end_date: 2025-12-31
+  frequency: daily
+  price_field: adjusted_close
+  ohlcv_required: true
+  raw_dir: data/raw
+  processed_dir: data/processed
+
+universe:
+  default: sp500_current_constituents
+  sector_pairing: same_sector
+  acknowledge_survivorship_bias: true
+
+pair_selection:
+  min_return_correlation: 0.6
+  cointegration_test: engle_granger
+  multiple_testing_correction: benjamini_hochberg_fdr
+  half_life_min_days: 2
+  half_life_max_days: 60
+  top_n_pairs: 10
+  formation_window_days: 504
+
+spread:
+  definition: log_price_hedge_ratio_adjusted
+  hedge_ratio_method: static_ols
+  estimate_beta_on: formation_training_window_only
+  allow_rolling_ols_robustness: true
+
+features:
+  lag_all_features_days: 1
+  enabled:
+    - lagged_spread
+    - lagged_z_score
+    - rolling_spread_mean
+    - rolling_spread_volatility
+    - spread_momentum
+    - return_differential
+    - rolling_correlation
+    - volume_ratio
+    - market_return_proxy
+    - volatility_regime_proxy
+  rolling_windows:
+    z_score: 60
+    correlation: 60
+    volatility: 60
+
+models:
+  enabled:
+    - naive_persistence
+    - rolling_mean
+    - arima
+    - kalman_filter
+    - xgboost
+    - lstm
+  interface:
+    - fit
+    - predict
+    - predict_one_step
+  validation: walk_forward
+
+signals:
+  source: predicted_next_day_spread_z_score
+  entry_z_score: 2.0
+  exit_z_score: 0.5
+  stop_loss_z_score: 3.0
+  max_holding_days: 60
+  sizing: hedge_ratio_aware_dollar_neutral
+
+backtest:
+  method: walk_forward_out_of_sample
+  initial_capital: 1000000
+  commission_bps: 5
+  slippage_bps: 5
+  borrow_cost_bps: 0
+  capital_allocation: equal_weight_pairs
+
+robustness:
+  entry_z:
+    - 1.5
+    - 2.0
+    - 2.5
+  exit_z:
+    - 0.25
+    - 0.5
+    - 0.75
+  transaction_cost_bps:
+    - 0
+    - 5
+    - 10
+    - 20
+  z_score_windows:
+    - 20
+    - 60
+    - 120
+  top_n_pairs:
+    - 5
+    - 10
+    - 20
+
+regimes:
+  enabled:
+    - full_sample
+    - high_volatility
+    - low_volatility
+    - bull_market
+    - bear_market
+    - 2020_stress_period
+    - 2022_rate_hike_drawdown_period
+    - 2025_out_of_sample_extension
+
+reporting:
+  output_dir: reports
+  formats:
+    - markdown
+    - html
+  include_sections:
+    - Executive Summary
+    - Strategy Hypothesis
+    - Data and Universe
+    - Pair Selection Methodology
+    - Spread Construction
+    - Forecasting Models
+    - Signal and Portfolio Construction
+    - Backtest Assumptions
+    - Forecasting Results
+    - Trading Performance
+    - Robustness Analysis
+    - Market Regime Analysis
+    - Risk Analysis
+    - Limitations
+    - Deployment Considerations
+    - Conclusion
+  exclude_sections:
+    - Literature Review
+    - References
+    - Academic citations
+    - Bibliography
+    - Citation management
