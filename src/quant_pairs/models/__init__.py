@@ -7,6 +7,7 @@ from quant_pairs.models.baselines import (
 )
 from quant_pairs.models.config import ForecastingConfig
 from quant_pairs.models.interface import ForecastingModel, predictive_feature_columns
+from quant_pairs.models.lstm_model import LSTMForecastingModel
 from quant_pairs.models.metrics import (
     build_model_comparison,
     compute_forecasting_metrics,
@@ -24,6 +25,7 @@ __all__ = [
     "ForecastingModel",
     "ForecastingPipeline",
     "ForecastingResult",
+    "LSTMForecastingModel",
     "NaivePersistenceModel",
     "RollingMeanBaselineModel",
     "XGBoostForecastingModel",

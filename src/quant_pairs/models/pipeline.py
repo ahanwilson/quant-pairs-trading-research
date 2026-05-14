@@ -17,6 +17,7 @@ from quant_pairs.models.baselines import (
 from quant_pairs.models.config import ForecastingConfig
 from quant_pairs.models.interface import ForecastingModel
 from quant_pairs.models.loader import load_feature_splits
+from quant_pairs.models.lstm_model import LSTMForecastingModel
 from quant_pairs.models.metrics import (
     build_model_comparison,
     compute_forecasting_metrics,
@@ -133,6 +134,14 @@ class ForecastingPipeline:
                 params=self.config.xgboost_params,
                 target_column=self.config.target_column,
                 missing_feature_strategy=self.config.xgboost_missing_feature_strategy,
+            )
+        if normalized == "lstm":
+            return LSTMForecastingModel(
+                params=self.config.lstm_params,
+                sequence_length=self.config.lstm_sequence_length,
+                target_column=self.config.target_column,
+                missing_feature_strategy=self.config.lstm_missing_feature_strategy,
+                scale_features=self.config.lstm_scale_features,
             )
         raise ValueError(f"Unsupported forecasting model: {model_name}")
 

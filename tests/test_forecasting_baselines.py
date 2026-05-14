@@ -160,6 +160,19 @@ def _forecasting_config(
             "objective": "reg:squarederror",
         },
         xgboost_missing_feature_strategy="median",
+        lstm_params={
+            "hidden_size": 4,
+            "num_layers": 1,
+            "dropout": 0.0,
+            "learning_rate": 0.01,
+            "batch_size": 2,
+            "max_epochs": 2,
+            "patience": 1,
+            "random_state": 42,
+        },
+        lstm_sequence_length=2,
+        lstm_missing_feature_strategy="median",
+        lstm_scale_features=True,
         train_validation_for_test=train_validation_for_test,
     )
 

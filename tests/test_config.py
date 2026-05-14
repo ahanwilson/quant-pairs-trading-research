@@ -61,6 +61,7 @@ def test_load_config_from_repository_root() -> None:
         "rolling_mean",
         "arima",
         "xgboost",
+        "lstm",
     ]
     assert config["models"]["target_column"] == "target_next_day_spread"
     assert config["models"]["rolling_mean"]["window"] == 20
@@ -69,6 +70,10 @@ def test_load_config_from_repository_root() -> None:
     assert config["models"]["xgboost"]["max_depth"] == 3
     assert config["models"]["xgboost"]["learning_rate"] == 0.05
     assert config["models"]["xgboost"]["missing_feature_strategy"] == "median"
+    assert config["models"]["lstm"]["sequence_length"] == 20
+    assert config["models"]["lstm"]["hidden_size"] == 32
+    assert config["models"]["lstm"]["max_epochs"] == 20
+    assert config["models"]["lstm"]["scale_features"]
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:

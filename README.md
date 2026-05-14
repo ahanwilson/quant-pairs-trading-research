@@ -26,7 +26,7 @@ This initial skeleton includes:
 
 Not implemented yet:
 
-- Advanced forecasting models such as Kalman Filter and LSTM.
+- Kalman Filter forecasting.
 - Signal generation.
 - Backtesting.
 - Analytics, robustness, regimes, or report generation.
@@ -180,9 +180,15 @@ By default, this step reads the split feature datasets from `results/features/`,
 - `results/forecasts/forecasting_metrics.csv`
 - `results/forecasts/model_comparison.csv`
 
-The v1 forecasting framework includes naive persistence, rolling mean, per-pair ARIMA, and XGBoost regression. XGBoost uses numeric engineered feature columns, automatically excludes target and metadata columns, and median-imputes missing feature values by default through `models.xgboost.missing_feature_strategy`.
+The v1 forecasting framework includes naive persistence, rolling mean, per-pair ARIMA, XGBoost regression, and an optional PyTorch LSTM sequence model. XGBoost and LSTM use numeric engineered feature columns and automatically exclude target and metadata columns. XGBoost median-imputes missing feature values by default through `models.xgboost.missing_feature_strategy`; LSTM median-imputes and standardizes features with statistics fit only on training data by default.
 
-Validation, test, and 2025 holdout rows are not used for default model training. The optional `models.train_validation_for_test` flag can allow train+validation fitting for test forecasts, while the final 2025 holdout is never used for training. This is a simple split-based baseline, not a full walk-forward retraining engine. This step does not implement LSTM, trading signals, backtesting, robustness analysis, regime analysis, or report generation.
+The LSTM backend imports PyTorch lazily. Install it with:
+
+```powershell
+python -m pip install .[deep_learning]
+```
+
+Validation, test, and 2025 holdout rows are not used for default model training. The optional `models.train_validation_for_test` flag can allow train+validation fitting for test forecasts, while the final 2025 holdout is never used for training. This is a simple split-based baseline, not a full walk-forward retraining engine. This step does not implement trading signals, backtesting, robustness analysis, regime analysis, or report generation.
 
 Enable or disable forecasting models with:
 
@@ -193,6 +199,7 @@ models:
     - rolling_mean
     - arima
     - xgboost
+    - lstm
 ```
 
 ## Config Defaults

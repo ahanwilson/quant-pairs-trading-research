@@ -1,4 +1,4 @@
-"""Tests for the XGBoost forecasting model wrapper."""
+"""Tests for the LSTM forecasting model wrapper."""
 
 from __future__ import annotations
 
@@ -12,34 +12,35 @@ from quant_pairs.models import (
     ForecastingConfig,
     ForecastingModel,
     ForecastingPipeline,
-    XGBoostForecastingModel,
+    LSTMForecastingModel,
 )
 from quant_pairs.models.pipeline import PREDICTION_COLUMNS
 
 
-class FakeXGBRegressor:
-    """Small estimator double with the XGBRegressor fit/predict shape."""
+class FakeSequenceRegressor:
+    """Small sequence regressor double with fit/predict methods."""
 
     def __init__(self, **params: Any) -> None:
         self.params = params
-        self.fit_columns: list[str] = []
-        self.predict_columns: list[str] = []
-        self.fit_y: np.ndarray = np.asarray([], dtype=float)
+        self.fit_X = np.empty((0, 0, 0), dtype=float)
+        self.fit_y = np.asarray([], dtype=float)
         self.mean_target = np.nan
 
-    def fit(self, features: pd.DataFrame, target: np.ndarray) -> "FakeXGBRegressor":
-        self.fit_columns = list(features.columns)
+    def fit(self, sequences: np.ndarray, target: np.ndarray) -> "FakeSequenceRegressor":
+        self.fit_X = np.asarray(sequences, dtype=float)
         self.fit_y = np.asarray(target, dtype=float)
         self.mean_target = float(np.mean(self.fit_y))
         return self
 
-    def predict(self, features: pd.DataFrame) -> np.ndarray:
-        self.predict_columns = list(features.columns)
-        return np.full(len(features), self.mean_target, dtype=float)
+    def predict(self, sequences: np.ndarray) -> np.ndarray:
+        return np.full(len(sequences), self.mean_target, dtype=float)
 
 
-def test_xgboost_model_implements_forecasting_interface() -> None:
-    model = XGBoostForecastingModel(estimator_factory=_fake_estimator_factory())
+def test_lstm_model_implements_forecasting_interface() -> None:
+    model = LSTMForecastingModel(
+        sequence_length=2,
+        estimator_factory=_fake_sequence_factory(),
+    )
 
     assert isinstance(model, ForecastingModel)
     fitted = model.fit(_feature_frame("train", [1.0, 2.0, 3.0]))
@@ -50,11 +51,11 @@ def test_xgboost_model_implements_forecasting_interface() -> None:
     assert isinstance(model.predict_one_step(_feature_frame("validation", [6.0]).iloc[0]), float)
 
 
-def test_xgboost_excludes_target_and_metadata_columns_from_features() -> None:
-    instances: list[FakeXGBRegressor] = []
-    model = XGBoostForecastingModel(
-        params={"n_estimators": 5},
-        estimator_factory=_recording_fake_factory(instances),
+def test_lstm_excludes_target_and_metadata_columns_from_features() -> None:
+    instances: list[FakeSequenceRegressor] = []
+    model = LSTMForecastingModel(
+        sequence_length=2,
+        estimator_factory=_recording_sequence_factory(instances),
     )
 
     model.fit(_feature_frame("train", [1.0, 2.0, 3.0]))
@@ -71,66 +72,116 @@ def test_xgboost_excludes_target_and_metadata_columns_from_features() -> None:
         "target_next_day_spread_change",
     }
     assert excluded.isdisjoint(model.feature_columns_)
-    assert excluded.isdisjoint(instances[0].fit_columns)
     assert {"spread", "spread_lag_1", "z_score_60_lag_1"}.issubset(
         model.feature_columns_
     )
 
 
-def test_xgboost_can_fit_and_predict_on_synthetic_feature_data() -> None:
-    model = XGBoostForecastingModel(
-        missing_feature_strategy="median",
-        estimator_factory=_fake_estimator_factory(),
+def test_lstm_sequence_construction_uses_only_past_feature_rows() -> None:
+    instances: list[FakeSequenceRegressor] = []
+    model = LSTMForecastingModel(
+        sequence_length=3,
+        scale_features=False,
+        estimator_factory=_recording_sequence_factory(instances),
+    )
+    training = _feature_frame("train", [10.0, 20.0, 30.0, 40.0])
+
+    model.fit(training)
+
+    spread_index = model.feature_columns_.index("spread")
+    first_sequence_spreads = instances[0].fit_X[0, :, spread_index].tolist()
+    second_sequence_spreads = instances[0].fit_X[1, :, spread_index].tolist()
+    assert first_sequence_spreads == [10.0, 20.0, 30.0]
+    assert second_sequence_spreads == [20.0, 30.0, 40.0]
+    assert instances[0].fit_y.tolist() == [30.5, 40.5]
+
+
+def test_lstm_can_fit_and_predict_on_synthetic_feature_data() -> None:
+    model = LSTMForecastingModel(
+        sequence_length=2,
+        estimator_factory=_fake_sequence_factory(),
     )
 
     model.fit(_feature_frame("train", [1.0, 2.0, 3.0, 4.0], include_missing=True))
     predictions = model.predict(_feature_frame("validation", [5.0, 6.0]))
 
     assert predictions.notna().all()
-    assert predictions.tolist() == [3.0, 3.0]
+    assert predictions.tolist() == [3.5, 3.5]
 
 
-def test_xgboost_pipeline_does_not_train_on_validation_test_or_holdout_rows(
+def test_lstm_pipeline_does_not_train_on_validation_test_or_holdout_rows(
     tmp_path: Path,
 ) -> None:
-    instances: list[FakeXGBRegressor] = []
-    config = _forecasting_config(tmp_path, enabled_models=("xgboost",))
+    instances: list[FakeSequenceRegressor] = []
+    config = _forecasting_config(tmp_path, enabled_models=("lstm",))
     frames = _write_feature_splits(config)
     pipeline = ForecastingPipeline(
         config,
         model_factories={
-            "xgboost": lambda: XGBoostForecastingModel(
-                params=config.xgboost_params,
+            "lstm": lambda: LSTMForecastingModel(
+                params=config.lstm_params,
+                sequence_length=config.lstm_sequence_length,
                 target_column=config.target_column,
-                missing_feature_strategy=config.xgboost_missing_feature_strategy,
-                estimator_factory=_recording_fake_factory(instances),
+                missing_feature_strategy=config.lstm_missing_feature_strategy,
+                scale_features=config.lstm_scale_features,
+                estimator_factory=_recording_sequence_factory(instances),
             )
         },
     )
 
     result = pipeline.run()
 
-    expected_train_target = frames["train"]["target_next_day_spread"].to_numpy(dtype=float)
+    expected_target = frames["train"]["target_next_day_spread"].iloc[1:].to_numpy(dtype=float)
     for instance in instances:
-        np.testing.assert_allclose(instance.fit_y, expected_train_target)
+        np.testing.assert_allclose(instance.fit_y, expected_target)
     assert (result.predictions["training_split_source"] == "train").all()
     assert (
         result.predictions["training_observation_count"] == len(frames["train"])
     ).all()
 
 
-def test_xgboost_prediction_output_has_expected_columns_and_metrics(
+def test_lstm_scaler_is_fit_only_on_training_data(tmp_path: Path) -> None:
+    instances: list[FakeSequenceRegressor] = []
+    config = _forecasting_config(tmp_path, enabled_models=("lstm",))
+    frames = _write_feature_splits(config)
+    pipeline = ForecastingPipeline(
+        config,
+        model_factories={
+            "lstm": lambda: LSTMForecastingModel(
+                params=config.lstm_params,
+                sequence_length=config.lstm_sequence_length,
+                target_column=config.target_column,
+                scale_features=config.lstm_scale_features,
+                estimator_factory=_recording_sequence_factory(instances),
+            )
+        },
+    )
+
+    pipeline.run()
+
+    direct_model = LSTMForecastingModel(
+        sequence_length=config.lstm_sequence_length,
+        estimator_factory=_fake_sequence_factory(),
+    ).fit(frames["train"])
+    np.testing.assert_allclose(
+        instances[0].fit_X,
+        direct_model.estimator_.fit_X,
+    )
+
+
+def test_lstm_prediction_output_has_expected_columns_and_metrics(
     tmp_path: Path,
 ) -> None:
-    config = _forecasting_config(tmp_path, enabled_models=("xgboost",))
+    config = _forecasting_config(tmp_path, enabled_models=("lstm",))
     _write_feature_splits(config)
     pipeline = ForecastingPipeline(
         config,
         model_factories={
-            "xgboost": lambda: XGBoostForecastingModel(
-                params=config.xgboost_params,
+            "lstm": lambda: LSTMForecastingModel(
+                params=config.lstm_params,
+                sequence_length=config.lstm_sequence_length,
                 target_column=config.target_column,
-                estimator_factory=_fake_estimator_factory(),
+                estimator_factory=_fake_sequence_factory(),
             )
         },
     )
@@ -138,20 +189,20 @@ def test_xgboost_prediction_output_has_expected_columns_and_metrics(
     result = pipeline.run()
 
     assert list(result.predictions.columns) == PREDICTION_COLUMNS
-    assert set(result.predictions["model"]) == {"xgboost"}
-    assert set(result.metrics["model"]) == {"xgboost"}
+    assert set(result.predictions["model"]) == {"lstm"}
+    assert set(result.metrics["model"]) == {"lstm"}
     assert config.predictions_path.exists()
     assert config.metrics_path.exists()
     assert config.comparison_path.exists()
 
 
-def _fake_estimator_factory() -> Any:
-    return lambda params: FakeXGBRegressor(**params)
+def _fake_sequence_factory() -> Any:
+    return lambda params: FakeSequenceRegressor(**params)
 
 
-def _recording_fake_factory(instances: list[FakeXGBRegressor]) -> Any:
-    def factory(params: dict[str, Any]) -> FakeXGBRegressor:
-        estimator = FakeXGBRegressor(**params)
+def _recording_sequence_factory(instances: list[FakeSequenceRegressor]) -> Any:
+    def factory(params: dict[str, Any]) -> FakeSequenceRegressor:
+        estimator = FakeSequenceRegressor(**params)
         instances.append(estimator)
         return estimator
 

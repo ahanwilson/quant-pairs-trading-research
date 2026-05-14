@@ -25,6 +25,10 @@ class ForecastingConfig:
     arima_order: tuple[int, int, int]
     xgboost_params: dict[str, Any]
     xgboost_missing_feature_strategy: str
+    lstm_params: dict[str, Any]
+    lstm_sequence_length: int
+    lstm_missing_feature_strategy: str
+    lstm_scale_features: bool
     train_validation_for_test: bool
 
     @classmethod
@@ -96,6 +100,16 @@ class ForecastingConfig:
             xgboost_missing_feature_strategy=str(
                 model_config.get("xgboost", {}).get("missing_feature_strategy", "median")
             ),
+            lstm_params=_lstm_params(model_config.get("lstm", {})),
+            lstm_sequence_length=int(
+                model_config.get("lstm", {}).get("sequence_length", 20)
+            ),
+            lstm_missing_feature_strategy=str(
+                model_config.get("lstm", {}).get("missing_feature_strategy", "median")
+            ),
+            lstm_scale_features=bool(
+                model_config.get("lstm", {}).get("scale_features", True)
+            ),
             train_validation_for_test=bool(
                 model_config.get("train_validation_for_test", False)
             ),
@@ -123,4 +137,22 @@ def _xgboost_params(config: Mapping[str, Any]) -> dict[str, Any]:
         "colsample_bytree": float(params.get("colsample_bytree", 0.8)),
         "random_state": int(params.get("random_state", 42)),
         "objective": str(params.get("objective", "reg:squarederror")),
+    }
+
+
+def _lstm_params(config: Mapping[str, Any]) -> dict[str, Any]:
+    params = {
+        key: value
+        for key, value in config.items()
+        if key not in {"sequence_length", "missing_feature_strategy", "scale_features"}
+    }
+    return {
+        "hidden_size": int(params.get("hidden_size", 32)),
+        "num_layers": int(params.get("num_layers", 1)),
+        "dropout": float(params.get("dropout", 0.1)),
+        "learning_rate": float(params.get("learning_rate", 0.001)),
+        "batch_size": int(params.get("batch_size", 32)),
+        "max_epochs": int(params.get("max_epochs", 20)),
+        "patience": int(params.get("patience", 3)),
+        "random_state": int(params.get("random_state", 42)),
     }
