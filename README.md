@@ -26,13 +26,14 @@ This initial skeleton includes:
 - A walk-forward-compatible backtest entry point in `scripts/run_backtest.py`.
 - A performance analytics entry point in `scripts/run_performance_analytics.py`.
 - A robustness analysis entry point in `scripts/run_robustness_analysis.py`.
+- A regime analysis entry point in `scripts/run_regime_analysis.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
 - Kalman Filter forecasting.
-- Regimes or report generation.
+- Final report generation.
 
 ## Setup
 
@@ -378,6 +379,50 @@ robustness:
 Robustness scenario ranking currently assumes higher-is-better metrics. Use metrics such as `sharpe_ratio` or `calmar_ratio`; lower-is-better ranking is not implemented in the current robustness layer.
 
 Current v1 limitation: robustness reruns signal generation, backtesting, and analytics against existing selected pairs, spreads, z-scores, and forecasts. It does not reselect pairs, reconstruct spreads, retrain forecasting models, run regime analysis, or generate the final report. If you sweep `zscore_window_values`, make sure the requested windows already exist in `results/spreads/zscores.csv`.
+
+## Run Regime Analysis
+
+After backtest and analytics outputs exist, evaluate performance by market regime with:
+
+```powershell
+python scripts/run_regime_analysis.py --config config.yaml
+```
+
+By default, this step reads:
+
+- `results/backtests/daily_pnl.csv`
+- `results/backtests/equity_curves.csv`
+- `results/backtests/trade_log.csv`
+- `results/backtests/exposure.csv`
+- `results/analytics/backtest_metrics.csv` when present
+- `results/analytics/drawdown_series.csv` when present
+- processed `SPY` prices under `data/processed/` when available
+
+Outputs are written under `results/regimes/`:
+
+- `regime_labels.csv`
+- `regime_performance.csv`
+- `special_period_performance.csv`
+- `regime_summary.csv`
+
+Regime analysis creates daily labels for validation, test, `holdout_2025`, high/low/normal volatility, optional bull/bear market states, and configured special periods. The default volatility method uses lagged rolling market-proxy volatility and expanding historical quantile thresholds, so future proxy data does not relabel earlier days. You can opt into full-sample volatility quantiles with `regime_analysis.volatility_quantile_method: full_sample`, but that mode is descriptive and can use future information.
+
+Bull/bear labels use lagged market-proxy price versus a lagged moving average. If the configured proxy file is missing, or there is not enough proxy history, volatility and trend labels remain unclassified while split and special-period labels are still produced.
+
+```yaml
+regime_analysis:
+  enabled: true
+  output_dir: results/regimes
+  market_proxy: SPY
+  volatility_window: 60
+  volatility_quantile_method: historical_expanding
+  high_volatility_quantile: 0.75
+  low_volatility_quantile: 0.25
+  minimum_observations_per_regime: 20
+  summary_ranking_metric: sharpe_ratio
+```
+
+This layer is evaluation-only. It does not reselect models, alter strategy parameters, rerun signals or backtests, run robustness scenarios, or generate the final report.
 
 ## Config Defaults
 

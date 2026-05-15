@@ -249,6 +249,34 @@ robustness:
   selection_split: validation
   concentration_top_fraction: 0.2
 
+regime_analysis:
+  enabled: true
+  output_dir: results/regimes
+  market_proxy: SPY
+  # Volatility labels use lagged rolling proxy volatility by default, then compare
+  # against expanding historical quantiles so future data cannot relabel past days.
+  volatility_window: 60
+  volatility_min_periods: 60
+  volatility_quantile_method: historical_expanding
+  high_volatility_quantile: 0.75
+  low_volatility_quantile: 0.25
+  # Bull/bear labels are optional and require enough lagged market proxy history.
+  enable_bull_bear: true
+  bull_bear_window: 200
+  bull_bear_min_periods: 200
+  minimum_observations_per_regime: 20
+  summary_ranking_metric: sharpe_ratio
+  special_periods:
+    covid_stress:
+      start: "2020-02-01"
+      end: "2020-06-30"
+    rate_hike_drawdown:
+      start: "2022-01-01"
+      end: "2022-12-31"
+    final_holdout_2025:
+      start: "2025-01-01"
+      end: "2025-12-31"
+
 regimes:
   enabled:
     - full_sample

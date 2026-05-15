@@ -115,6 +115,31 @@ def test_load_config_from_repository_root() -> None:
         "calmar_ratio",
     }
     assert config["robustness"]["selection_split"] == "validation"
+    assert config["regime_analysis"]["enabled"] is True
+    assert config["regime_analysis"]["output_dir"] == "results/regimes"
+    assert config["regime_analysis"]["market_proxy"] == "SPY"
+    assert config["regime_analysis"]["volatility_window"] == 60
+    assert config["regime_analysis"]["volatility_min_periods"] == 60
+    assert (
+        config["regime_analysis"]["volatility_quantile_method"]
+        == "historical_expanding"
+    )
+    assert config["regime_analysis"]["high_volatility_quantile"] == 0.75
+    assert config["regime_analysis"]["low_volatility_quantile"] == 0.25
+    assert config["regime_analysis"]["enable_bull_bear"] is True
+    assert config["regime_analysis"]["bull_bear_window"] == 200
+    assert config["regime_analysis"]["bull_bear_min_periods"] == 200
+    assert config["regime_analysis"]["minimum_observations_per_regime"] == 20
+    assert config["regime_analysis"]["summary_ranking_metric"] == "sharpe_ratio"
+    assert config["regime_analysis"]["special_periods"]["covid_stress"]["start"] == (
+        "2020-02-01"
+    )
+    assert config["regime_analysis"]["special_periods"]["rate_hike_drawdown"][
+        "end"
+    ] == "2022-12-31"
+    assert config["regime_analysis"]["special_periods"]["final_holdout_2025"][
+        "start"
+    ] == "2025-01-01"
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:
