@@ -27,13 +27,13 @@ This initial skeleton includes:
 - A performance analytics entry point in `scripts/run_performance_analytics.py`.
 - A robustness analysis entry point in `scripts/run_robustness_analysis.py`.
 - A regime analysis entry point in `scripts/run_regime_analysis.py`.
+- A final report generation entry point in `scripts/run_report_generation.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
 - Kalman Filter forecasting.
-- Final report generation.
 
 ## Setup
 
@@ -423,6 +423,35 @@ regime_analysis:
 ```
 
 This layer is evaluation-only. It does not reselect models, alter strategy parameters, rerun signals or backtests, run robustness scenarios, or generate the final report.
+
+## Run Report Generation
+
+After the research pipeline has produced CSV outputs, generate the final strategy quant research report with:
+
+```powershell
+python scripts/run_report_generation.py --config config.yaml
+```
+
+Outputs are written under `results/reports/`:
+
+- `strategy_quant_research_report.md`
+- `strategy_quant_research_report.html`
+- `report_manifest.json`
+- optional figures under `results/reports/figures/`
+
+The report generator reads existing artifacts from the configured `results/` paths and does not rerun data ingestion, pair selection, spread construction, models, signals, backtests, robustness scenarios, or regime analysis. Missing outputs are called out as unavailable rather than inferred.
+
+Report settings are controlled by:
+
+```yaml
+reporting:
+  output_dir: results/reports
+  report_markdown_file: strategy_quant_research_report.md
+  report_html_file: strategy_quant_research_report.html
+  figures_dir: results/reports/figures
+  include_figures: true
+  max_table_rows: 20
+```
 
 ## Config Defaults
 

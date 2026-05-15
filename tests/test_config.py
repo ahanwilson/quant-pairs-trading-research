@@ -140,6 +140,18 @@ def test_load_config_from_repository_root() -> None:
     assert config["regime_analysis"]["special_periods"]["final_holdout_2025"][
         "start"
     ] == "2025-01-01"
+    assert config["reporting"]["output_dir"] == "results/reports"
+    assert (
+        config["reporting"]["report_markdown_file"]
+        == "strategy_quant_research_report.md"
+    )
+    assert (
+        config["reporting"]["report_html_file"]
+        == "strategy_quant_research_report.html"
+    )
+    assert config["reporting"]["figures_dir"] == "results/reports/figures"
+    assert config["reporting"]["include_figures"] is True
+    assert config["reporting"]["max_table_rows"] == 20
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:

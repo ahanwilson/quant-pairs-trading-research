@@ -289,30 +289,9 @@ regimes:
     - 2025_out_of_sample_extension
 
 reporting:
-  output_dir: reports
-  formats:
-    - markdown
-    - html
-  include_sections:
-    - Executive Summary
-    - Strategy Hypothesis
-    - Data and Universe
-    - Pair Selection Methodology
-    - Spread Construction
-    - Forecasting Models
-    - Signal and Portfolio Construction
-    - Backtest Assumptions
-    - Forecasting Results
-    - Trading Performance
-    - Robustness Analysis
-    - Market Regime Analysis
-    - Risk Analysis
-    - Limitations
-    - Deployment Considerations
-    - Conclusion
-  exclude_sections:
-    - Literature Review
-    - References
-    - Academic citations
-    - Bibliography
-    - Citation management
+  output_dir: results/reports
+  report_markdown_file: strategy_quant_research_report.md
+  report_html_file: strategy_quant_research_report.html
+  figures_dir: results/reports/figures
+  include_figures: true
+  max_table_rows: 20
