@@ -99,6 +99,22 @@ def test_load_config_from_repository_root() -> None:
     assert config["analytics"]["risk_free_rate"] == 0.0
     assert config["analytics"]["trading_days_per_year"] == 252
     assert config["analytics"]["output_dir"] == "results/analytics"
+    assert config["robustness"]["enabled"] is True
+    assert config["robustness"]["output_dir"] == "results/robustness"
+    assert config["robustness"]["entry_z_values"] == [1.5, 2.0]
+    assert config["robustness"]["exit_z_values"] == [0.5]
+    assert config["robustness"]["stop_loss_z_values"] == [3.0]
+    assert config["robustness"]["commission_bps_values"] == [0, 5]
+    assert config["robustness"]["slippage_bps_values"] == [2]
+    assert config["robustness"]["zscore_window_values"] == [60]
+    assert config["robustness"]["signal_model_values"] == ["best_validation"]
+    assert config["robustness"]["max_scenarios"] == 10
+    assert config["robustness"]["selection_metric"] == "sharpe_ratio"
+    assert config["robustness"]["selection_metric"] in {
+        "sharpe_ratio",
+        "calmar_ratio",
+    }
+    assert config["robustness"]["selection_split"] == "validation"
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:

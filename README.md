@@ -25,13 +25,14 @@ This initial skeleton includes:
 - A signal generation entry point in `scripts/run_signal_generation.py`.
 - A walk-forward-compatible backtest entry point in `scripts/run_backtest.py`.
 - A performance analytics entry point in `scripts/run_performance_analytics.py`.
+- A robustness analysis entry point in `scripts/run_robustness_analysis.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
 - Kalman Filter forecasting.
-- Robustness, regimes, or report generation.
+- Regimes or report generation.
 
 ## Setup
 
@@ -339,6 +340,44 @@ analytics:
 ```
 
 This step does not run robustness analysis, regime analysis, or final report generation.
+
+## Run Robustness Analysis
+
+After forecasts, signal inputs, backtest inputs, and processed prices exist, run:
+
+```powershell
+python scripts/run_robustness_analysis.py --config config.yaml
+```
+
+Outputs are written under `results/robustness/`:
+
+- `robustness_grid.csv`
+- `robustness_results.csv`
+- `robustness_summary.csv`
+
+The robustness layer builds deterministic scenario IDs, applies one controlled set of signal and cost overrides per scenario, then reuses the existing signal generation, backtest, and performance analytics modules. Scenario rows include the tested `entry_z`, `exit_z`, `stop_loss_z`, `commission_bps`, `slippage_bps`, `zscore_window`, and `signal_model` values.
+
+```yaml
+robustness:
+  enabled: true
+  output_dir: results/robustness
+  entry_z_values: [1.5, 2.0]
+  exit_z_values: [0.5]
+  stop_loss_z_values: [3.0]
+  commission_bps_values: [0, 5]
+  slippage_bps_values: [2]
+  zscore_window_values: [60]
+  signal_model_values: [best_validation]
+  max_scenarios: 10
+  selection_metric: sharpe_ratio
+  selection_split: validation
+```
+
+`robustness_summary.csv` ranks scenarios using validation metrics only. Test and `holdout_2025` metrics can appear in `robustness_results.csv` for evaluation, but they are not used to select the best robustness scenario.
+
+Robustness scenario ranking currently assumes higher-is-better metrics. Use metrics such as `sharpe_ratio` or `calmar_ratio`; lower-is-better ranking is not implemented in the current robustness layer.
+
+Current v1 limitation: robustness reruns signal generation, backtesting, and analytics against existing selected pairs, spreads, z-scores, and forecasts. It does not reselect pairs, reconstruct spreads, retrain forecasting models, run regime analysis, or generate the final report. If you sweep `zscore_window_values`, make sure the requested windows already exist in `results/spreads/zscores.csv`.
 
 ## Config Defaults
 
