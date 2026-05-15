@@ -30,6 +30,10 @@ class ForecastingConfig:
     lstm_missing_feature_strategy: str
     lstm_scale_features: bool
     train_validation_for_test: bool
+    model_selection_metric: str = "rmse"
+    model_selection_split: str = "validation"
+    model_selection_direction: str = "minimize"
+    default_signal_model: str = "best_validation"
 
     @classmethod
     def from_project_config(
@@ -40,6 +44,9 @@ class ForecastingConfig:
         root = project_root or Path.cwd()
         feature_config = config["features"]
         model_config = config["models"]
+        forecasting_config = config.get("forecasting", {})
+        if not isinstance(forecasting_config, Mapping):
+            raise ValueError("Config key 'forecasting' must be a mapping when present.")
         feature_output_dir = _resolve_path(
             root, feature_config.get("output_dir", "results/features")
         )
@@ -113,6 +120,18 @@ class ForecastingConfig:
             train_validation_for_test=bool(
                 model_config.get("train_validation_for_test", False)
             ),
+            model_selection_metric=str(
+                forecasting_config.get("model_selection_metric", "rmse")
+            ).strip().lower(),
+            model_selection_split=_selection_split(
+                forecasting_config.get("model_selection_split", "validation")
+            ),
+            model_selection_direction=_selection_direction(
+                forecasting_config.get("model_selection_direction", "minimize")
+            ),
+            default_signal_model=str(
+                forecasting_config.get("default_signal_model", "best_validation")
+            ).strip(),
         )
 
 
@@ -156,3 +175,19 @@ def _lstm_params(config: Mapping[str, Any]) -> dict[str, Any]:
         "patience": int(params.get("patience", 3)),
         "random_state": int(params.get("random_state", 42)),
     }
+
+
+def _selection_split(value: object) -> str:
+    split = str(value).strip().lower()
+    if split != "validation":
+        raise ValueError("forecasting.model_selection_split must be validation.")
+    return split
+
+
+def _selection_direction(value: object) -> str:
+    direction = str(value).strip().lower()
+    if direction not in {"minimize", "maximize"}:
+        raise ValueError(
+            "forecasting.model_selection_direction must be minimize or maximize."
+        )
+    return direction

@@ -36,9 +36,9 @@ PREDICTION_COLUMNS = [
     "prediction",
     "actual",
     "forecast_error",
-    "spread",
-    "training_observation_count",
     "training_split_source",
+    "training_observation_count",
+    "spread",
 ]
 
 
@@ -95,7 +95,12 @@ class ForecastingPipeline:
             else pd.DataFrame(columns=PREDICTION_COLUMNS)
         )
         metrics = compute_forecasting_metrics(predictions)
-        comparison = build_model_comparison(metrics)
+        comparison = build_model_comparison(
+            metrics,
+            selection_metric=self.config.model_selection_metric,
+            selection_split=self.config.model_selection_split,
+            selection_direction=self.config.model_selection_direction,
+        )
 
         self.config.output_dir.mkdir(parents=True, exist_ok=True)
         predictions.to_csv(self.config.predictions_path, index=False)
@@ -117,7 +122,7 @@ class ForecastingPipeline:
         normalized = model_name.strip().lower()
         if normalized in self.model_factories:
             return self.model_factories[normalized]()
-        if normalized == "naive_persistence":
+        if normalized in {"naive", "naive_persistence"}:
             return NaivePersistenceModel(target_column=self.config.target_column)
         if normalized == "rolling_mean":
             return RollingMeanBaselineModel(

@@ -57,7 +57,7 @@ def test_load_config_from_repository_root() -> None:
     assert config["features"]["rolling_windows"]["momentum"] == 5
     assert "lstm" in config["models"]["enabled"]
     assert config["models"]["forecasting_enabled"] == [
-        "naive_persistence",
+        "naive",
         "rolling_mean",
         "arima",
         "xgboost",
@@ -74,6 +74,10 @@ def test_load_config_from_repository_root() -> None:
     assert config["models"]["lstm"]["hidden_size"] == 32
     assert config["models"]["lstm"]["max_epochs"] == 20
     assert config["models"]["lstm"]["scale_features"]
+    assert config["forecasting"]["model_selection_metric"] == "rmse"
+    assert config["forecasting"]["model_selection_split"] == "validation"
+    assert config["forecasting"]["model_selection_direction"] == "minimize"
+    assert config["forecasting"]["default_signal_model"] == "best_validation"
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:

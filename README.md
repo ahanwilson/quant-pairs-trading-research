@@ -21,6 +21,7 @@ This initial skeleton includes:
 - A spread construction entry point in `scripts/run_spread_construction.py`.
 - A feature engineering entry point in `scripts/run_feature_engineering.py`.
 - A baseline forecasting entry point in `scripts/run_forecasting_baselines.py`.
+- A forecast comparison entry point in `scripts/run_forecast_comparison.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
@@ -195,12 +196,36 @@ Enable or disable forecasting models with:
 ```yaml
 models:
   forecasting_enabled:
-    - naive_persistence
+    - naive
     - rolling_mean
     - arima
     - xgboost
     - lstm
 ```
+
+## Run Forecast Comparison
+
+After forecast predictions exist, refresh metrics and validation-only model selection with:
+
+```powershell
+python scripts/run_forecast_comparison.py --config config.yaml
+```
+
+The comparison script reads `results/forecasts/predictions.csv`, recomputes `results/forecasts/forecasting_metrics.csv`, and writes `results/forecasts/model_comparison.csv`. If predictions are unavailable but a metrics file exists, it can rebuild the comparison from the metrics file.
+
+Forecast metrics are computed per model and split, including RMSE, MAE, directional accuracy, prediction correlation, mean-error bias, and observation count. Directional accuracy uses the prior feature-date spread when available and ignores rows where the spread change cannot be determined; if no rows are directionally evaluable, the directional accuracy is left blank.
+
+Model selection is controlled by:
+
+```yaml
+forecasting:
+  model_selection_metric: rmse
+  model_selection_split: validation
+  model_selection_direction: minimize
+  default_signal_model: best_validation
+```
+
+`model_comparison.csv` reports validation, test, and 2025 holdout metrics side by side, but `selected_by_validation` and `selection_rank` are based only on the configured validation metric. Test and holdout rows are evaluation-only and are not used to choose a model.
 
 ## Config Defaults
 

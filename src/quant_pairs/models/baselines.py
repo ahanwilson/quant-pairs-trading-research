@@ -16,7 +16,7 @@ class NaivePersistenceModel(ForecastingModel):
     """Predict next-day spread as the current feature-date spread."""
 
     target_column: str = "target_next_day_spread"
-    name: str = "naive_persistence"
+    name: str = "naive"
 
     def fit(self, training_data: pd.DataFrame) -> "NaivePersistenceModel":
         return self

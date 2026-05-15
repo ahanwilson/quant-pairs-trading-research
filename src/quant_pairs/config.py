@@ -19,6 +19,7 @@ REQUIRED_TOP_LEVEL_KEYS = (
     "spread",
     "features",
     "models",
+    "forecasting",
     "signals",
     "backtest",
     "robustness",
@@ -89,5 +90,29 @@ def validate_config(config: Mapping[str, Any]) -> dict[str, Any]:
     for key in required_walk_forward_keys:
         if key not in walk_forward_config:
             raise ConfigError(f"Config key 'walk_forward.{key}' is required.")
+
+    forecasting_config = config["forecasting"]
+    if not isinstance(forecasting_config, Mapping):
+        raise ConfigError("Config key 'forecasting' must be a mapping.")
+
+    for key in (
+        "model_selection_metric",
+        "model_selection_split",
+        "model_selection_direction",
+        "default_signal_model",
+    ):
+        if key not in forecasting_config:
+            raise ConfigError(f"Config key 'forecasting.{key}' is required.")
+
+    if str(forecasting_config["model_selection_split"]).strip().lower() != "validation":
+        raise ConfigError("Forecast model selection must use validation split only.")
+
+    if str(forecasting_config["model_selection_direction"]).strip().lower() not in {
+        "minimize",
+        "maximize",
+    }:
+        raise ConfigError(
+            "Config key 'forecasting.model_selection_direction' must be minimize or maximize."
+        )
 
     return dict(config)

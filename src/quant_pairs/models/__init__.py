@@ -11,6 +11,9 @@ from quant_pairs.models.lstm_model import LSTMForecastingModel
 from quant_pairs.models.metrics import (
     build_model_comparison,
     compute_forecasting_metrics,
+    rank_models_by_validation,
+    resolve_configured_forecast_model,
+    select_best_validation_model,
 )
 from quant_pairs.models.pipeline import (
     ForecastingPipeline,
@@ -33,4 +36,7 @@ __all__ = [
     "build_model_comparison",
     "compute_forecasting_metrics",
     "predictive_feature_columns",
+    "rank_models_by_validation",
+    "resolve_configured_forecast_model",
+    "select_best_validation_model",
 ]

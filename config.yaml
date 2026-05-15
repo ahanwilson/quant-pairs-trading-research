@@ -131,7 +131,7 @@ features:
 
 models:
   enabled:
-    - naive_persistence
+    - naive
     - rolling_mean
     - arima
     - kalman_filter
@@ -143,7 +143,7 @@ models:
     - predict_one_step
   validation: walk_forward
   forecasting_enabled:
-    - naive_persistence
+    - naive
     - rolling_mean
     - arima
     - xgboost
@@ -182,6 +182,12 @@ models:
     random_state: 42
     scale_features: true
     missing_feature_strategy: median
+
+forecasting:
+  model_selection_metric: rmse
+  model_selection_split: validation
+  model_selection_direction: minimize
+  default_signal_model: best_validation
 
 signals:
   source: predicted_next_day_spread_z_score
