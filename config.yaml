@@ -295,3 +295,15 @@ reporting:
   figures_dir: results/reports/figures
   include_figures: true
   max_table_rows: 20
+
+pipeline:
+  output_dir: results/pipeline
+  run_manifest_file: pipeline_run_manifest.json
+  default_stages: all
+  stop_on_failure: true
+  dry_run: false
+  smoke_test: false
+  skip_heavy_models: false
+  skip_robustness: false
+  skip_regime: false
+  skip_report_figures: false

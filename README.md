@@ -14,7 +14,7 @@ This initial skeleton includes:
 - A clean `src/` based `quant_pairs` package.
 - Placeholder subpackages for data, universe, pairs, spreads, features, models, signals, backtest, analytics, robustness, regimes, and reporting.
 - A config loader in `quant_pairs.config`.
-- A guarded `scripts/run_full_research.py` entry point.
+- A full pipeline orchestration entry point in `scripts/run_full_research.py`.
 - A data ingestion and validation entry point in `scripts/run_data_pipeline.py`.
 - A universe construction entry point in `scripts/run_universe_construction.py`.
 - A pair selection entry point in `scripts/run_pair_selection.py`.
@@ -55,13 +55,64 @@ python -m pip install -e .
 pytest
 ```
 
-## Run Skeleton Entry Point
+## Run Full Research Pipeline
 
 ```powershell
 python scripts/run_full_research.py --config config.yaml
 ```
 
-The runner currently validates that the config can be loaded and then exits. It does not run the research pipeline yet.
+The full runner orchestrates the existing pipeline stages in order:
+
+1. data ingestion and validation
+2. universe construction
+3. pair selection
+4. spread construction
+5. feature engineering
+6. forecasting
+7. forecast comparison and model selection
+8. signal generation
+9. backtest
+10. performance analytics
+11. robustness analysis
+12. regime analysis
+13. final report generation
+
+Full real-data execution can take time and may require internet access or pre-cached market data, depending on the configured data source and cache state. It also assumes all upstream local inputs are available, such as `data/universe/sp500_constituents.csv` and processed price history when later stages are requested.
+
+The runner writes a manifest to:
+
+```text
+results/pipeline/pipeline_run_manifest.json
+```
+
+The manifest records the run timestamp, config path, execution mode, Python and package versions, git commit hash when available, requested/completed/skipped/failed stages, expected outputs, found outputs, missing outputs, and known limitations.
+
+### Dry Run and Smoke Test
+
+Validate the orchestration graph and configured paths without executing research stages:
+
+```powershell
+python scripts/run_full_research.py --config config.yaml --dry-run
+```
+
+Run a lightweight smoke-test against local fixture or previously generated outputs:
+
+```powershell
+python scripts/run_full_research.py --config config.yaml --smoke-test
+```
+
+Useful optional flags:
+
+```powershell
+python scripts/run_full_research.py --config config.yaml --dry-run --stages all --skip-heavy-models --skip-robustness --skip-regime --skip-report-figures
+```
+
+- `--stages all` runs or validates every stage. A comma-separated subset such as `--stages data,universe,pairs` is also supported.
+- `--skip-heavy-models` removes XGBoost and LSTM from the effective forecasting config for the run.
+- `--skip-robustness` and `--skip-regime` record those stages as skipped.
+- `--skip-report-figures` disables report figure generation in the effective config.
+
+Dry-run mode does not require internet access and does not download market data. Smoke-test mode also avoids heavy execution, but it expects local fixture outputs to exist for the stages being validated.
 
 ## Run Data Pipeline
 

@@ -152,6 +152,16 @@ def test_load_config_from_repository_root() -> None:
     assert config["reporting"]["figures_dir"] == "results/reports/figures"
     assert config["reporting"]["include_figures"] is True
     assert config["reporting"]["max_table_rows"] == 20
+    assert config["pipeline"]["output_dir"] == "results/pipeline"
+    assert config["pipeline"]["run_manifest_file"] == "pipeline_run_manifest.json"
+    assert config["pipeline"]["default_stages"] == "all"
+    assert config["pipeline"]["stop_on_failure"] is True
+    assert config["pipeline"]["dry_run"] is False
+    assert config["pipeline"]["smoke_test"] is False
+    assert config["pipeline"]["skip_heavy_models"] is False
+    assert config["pipeline"]["skip_robustness"] is False
+    assert config["pipeline"]["skip_regime"] is False
+    assert config["pipeline"]["skip_report_figures"] is False
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:

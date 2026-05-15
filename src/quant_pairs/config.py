@@ -26,6 +26,7 @@ REQUIRED_TOP_LEVEL_KEYS = (
     "robustness",
     "regimes",
     "reporting",
+    "pipeline",
 )
 
 
