@@ -87,6 +87,15 @@ def test_load_config_from_repository_root() -> None:
     assert config["signals"]["output_dir"] == "results/signals"
     assert config["signals"]["signals_file"] == "signals.csv"
     assert config["signals"]["summary_file"] == "signal_summary.csv"
+    assert config["backtest"]["initial_capital"] == 100000
+    assert config["backtest"]["commission_bps"] == 5
+    assert config["backtest"]["slippage_bps"] == 2
+    assert config["backtest"]["borrow_cost_bps"] == 0
+    assert config["backtest"]["capital_allocation"] == "equal_weight"
+    assert config["backtest"]["position_sizing"] == "beta_scaled_gross"
+    assert config["backtest"]["max_active_pairs"] == 20
+    assert config["backtest"]["generate_train_backtest"] is False
+    assert config["backtest"]["output_dir"] == "results/backtests"
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:

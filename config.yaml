@@ -205,11 +205,18 @@ signals:
 
 backtest:
   method: walk_forward_out_of_sample
-  initial_capital: 1000000
+  initial_capital: 100000
   commission_bps: 5
-  slippage_bps: 5
+  slippage_bps: 2
   borrow_cost_bps: 0
-  capital_allocation: equal_weight_pairs
+  capital_allocation: equal_weight
+  # beta_scaled_gross makes leg-2 notional proportional to abs(beta);
+  # total gross exposure per pair is capped by initial_capital / max_active_pairs.
+  # Net dollar exposure may not be exactly zero when beta != 1.
+  position_sizing: beta_scaled_gross
+  max_active_pairs: 20
+  generate_train_backtest: false
+  output_dir: results/backtests
 
 robustness:
   entry_z:

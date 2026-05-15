@@ -23,13 +23,13 @@ This initial skeleton includes:
 - A baseline forecasting entry point in `scripts/run_forecasting_baselines.py`.
 - A forecast comparison entry point in `scripts/run_forecast_comparison.py`.
 - A signal generation entry point in `scripts/run_signal_generation.py`.
+- A walk-forward-compatible backtest entry point in `scripts/run_backtest.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
 - Kalman Filter forecasting.
-- Backtesting.
 - Analytics, robustness, regimes, or report generation.
 
 ## Setup
@@ -261,6 +261,49 @@ signals:
   max_holding_days: 60
   generate_train_signals: false
 ```
+
+## Run Backtest
+
+After signals, spreads, selected pairs, hedge-ratio diagnostics, and processed prices exist, run:
+
+```powershell
+python scripts/run_backtest.py --config config.yaml
+```
+
+By default, the backtest reads:
+
+- `results/signals/signals.csv`
+- `results/spreads/spread_series.csv`
+- `results/spreads/spread_diagnostics.csv`
+- `results/pairs/selected_pairs.csv`
+- per-ticker adjusted-close price files under `data/processed/`
+
+Outputs are written under `results/backtests/`:
+
+- `daily_pnl.csv`
+- `equity_curves.csv`
+- `trade_log.csv`
+- `exposure.csv`
+- `open_positions.csv`
+
+The v1 engine executes signal actions on `target_date` when available, which keeps next-day forecast signals from trading on information that was not known at `feature_date`. It tracks one position per model and pair, prevents duplicate overlapping positions, and uses beta-aware fixed-gross sizing. With `position_sizing: beta_scaled_gross`, leg-2 notional is proportional to `abs(beta)` and total gross exposure per pair is capped by `initial_capital / max_active_pairs`. Net dollar exposure may not be exactly zero when `beta != 1`. Long spread means long `ticker_1` and short beta-scaled `ticker_2`; short spread means short `ticker_1` and long beta-scaled `ticker_2`.
+
+Commission, slippage, and optional borrow costs are deducted from net PnL. Validation, test, and `holdout_2025` signals are included by default; train signals are excluded unless `backtest.generate_train_backtest` is set to `true`.
+
+```yaml
+backtest:
+  initial_capital: 100000
+  commission_bps: 5
+  slippage_bps: 2
+  borrow_cost_bps: 0
+  capital_allocation: equal_weight
+  position_sizing: beta_scaled_gross
+  max_active_pairs: 20
+  generate_train_backtest: false
+  output_dir: results/backtests
+```
+
+This step simulates positions, costs, daily PnL, equity, exposure, turnover, and trade logs only. It does not compute performance analytics, robustness tests, regime analysis, or final reports.
 
 ## Config Defaults
 
