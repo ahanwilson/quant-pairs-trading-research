@@ -95,10 +95,10 @@ Validate the orchestration graph and configured paths without executing research
 python scripts/run_full_research.py --config config.yaml --dry-run
 ```
 
-Run a lightweight smoke-test against local fixture or previously generated outputs:
+Run a lightweight smoke-test from a clean checkout without downloading market data:
 
 ```powershell
-python scripts/run_full_research.py --config config.yaml --smoke-test
+python scripts/run_full_research.py --config config.yaml --smoke-test --skip-heavy-models --skip-robustness --skip-regime
 ```
 
 Useful optional flags:
@@ -112,7 +112,7 @@ python scripts/run_full_research.py --config config.yaml --dry-run --stages all 
 - `--skip-robustness` and `--skip-regime` record those stages as skipped.
 - `--skip-report-figures` disables report figure generation in the effective config.
 
-Dry-run mode does not require internet access and does not download market data. Smoke-test mode also avoids heavy execution, but it expects local fixture outputs to exist for the stages being validated.
+Dry-run mode does not require internet access and does not download market data. Smoke-test mode also avoids stage execution and automatically seeds tiny deterministic synthetic fixture files for missing required inputs and expected outputs before validating dependencies. Synthetic smoke inputs are written under `results/pipeline/smoke_inputs/`, while expected stage artifacts are written to their configured `results/` paths. Existing files are left in place, so smoke-test mode should not overwrite real research outputs.
 
 ## Run Data Pipeline
 

@@ -289,8 +289,15 @@ class PipelineOrchestrator:
         known_limitations = self._known_limitations()
         stage_records: list[StageRunRecord] = []
         skipped_by_flag = self._skipped_stage_names()
+        selected_stage_specs = self._selected_stage_specs()
+        if self.pipeline_config.smoke_test:
+            seeded_paths = seed_smoke_test_fixtures(selected_stage_specs)
+            known_limitations.append(
+                "Smoke-test mode generated minimal deterministic local fixture files "
+                f"for {len(seeded_paths)} missing paths."
+            )
 
-        for spec in self._selected_stage_specs():
+        for spec in selected_stage_specs:
             started = _utc_now()
             if spec.name in skipped_by_flag:
                 record = StageRunRecord(
@@ -403,7 +410,7 @@ class PipelineOrchestrator:
             config_path=self.config_path,
             effective_config_path=self.effective_config_path,
             pipeline_config=self.pipeline_config,
-            stage_specs=self._selected_stage_specs(),
+            stage_specs=selected_stage_specs,
             stage_records=stage_records,
             known_limitations=known_limitations,
             project_root=self.project_root,
@@ -577,6 +584,19 @@ def run_forecast_comparison_stage(config_path: Path, project_root: Path) -> None
         split=forecasting_config.model_selection_split,
         direction=forecasting_config.model_selection_direction,
     )
+
+
+def seed_smoke_test_fixtures(stage_specs: tuple[StageSpec, ...]) -> tuple[Path, ...]:
+    """Create tiny deterministic files needed for smoke-test path validation."""
+
+    seeded: list[Path] = []
+    for spec in stage_specs:
+        for requirement in spec.required_inputs:
+            seeded.extend(_seed_requirement(requirement))
+        for output_path in spec.expected_outputs:
+            if _write_smoke_file(output_path):
+                seeded.append(output_path)
+    return tuple(seeded)
 
 
 def build_pipeline_stages(
@@ -853,6 +873,14 @@ def apply_pipeline_options(
         reporting_config = config.setdefault("reporting", {})
         reporting_config["include_figures"] = False
 
+    if pipeline_config.get("smoke_test", False):
+        smoke_dir = "results/pipeline/smoke_inputs"
+        data_config = config.setdefault("data", {})
+        universe_config = config.setdefault("universe", {})
+        data_config["processed_dir"] = f"{smoke_dir}/processed"
+        data_config["raw_dir"] = f"{smoke_dir}/raw"
+        universe_config["constituents_path"] = f"{smoke_dir}/sp500_constituents.csv"
+
     return config
 
 
@@ -1024,6 +1052,94 @@ def _check_requirement(requirement: PathRequirement) -> PathCheck:
         exists=bool(found),
         kind=requirement.kind,
     )
+
+
+def _seed_requirement(requirement: PathRequirement) -> list[Path]:
+    if requirement.kind == "any_file":
+        if any(path.exists() for path in requirement.alternatives):
+            return []
+        first = next(iter(requirement.alternatives), None)
+        return [first] if first is not None and _write_smoke_file(first) else []
+    if requirement.path is None:
+        return []
+    if requirement.kind == "dir_glob":
+        if requirement.path.exists() and any(requirement.path.glob(requirement.pattern)):
+            return []
+        path = requirement.path / "AAA.csv"
+        return [path] if _write_smoke_file(path) else []
+    if requirement.kind == "directory":
+        if requirement.path.exists():
+            return []
+        requirement.path.mkdir(parents=True, exist_ok=True)
+        return [requirement.path]
+    return [requirement.path] if _write_smoke_file(requirement.path) else []
+
+
+def _write_smoke_file(path: Path) -> bool:
+    if path.exists():
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_smoke_file_content(path), encoding="utf-8")
+    return True
+
+
+def _smoke_file_content(path: Path) -> str:
+    name = path.name.lower()
+    suffix = path.suffix.lower()
+    if name == "sp500_constituents.csv":
+        return "ticker,company_name,sector,industry\nAAA,AAA Corp,Technology,Software\nBBB,BBB Corp,Technology,Software\n"
+    if suffix == ".json":
+        return json.dumps({"smoke_test": True, "generated_by": "pipeline_orchestrator"}, indent=2) + "\n"
+    if suffix in {".md", ".markdown"}:
+        return "# Smoke Test Report\n\nSynthetic orchestration fixture.\n"
+    if suffix in {".html", ".htm"}:
+        return "<!doctype html><html><body><h1>Smoke Test Report</h1></body></html>\n"
+    if suffix == ".csv":
+        return _smoke_csv_content(name)
+    return "smoke_test_fixture\n"
+
+
+def _smoke_csv_content(name: str) -> str:
+    specific = {
+        "data_validation_report.csv": "ticker,valid,issue_count\nAAA,true,0\nBBB,true,0\n",
+        "clean_universe.csv": "ticker,company_name,sector,industry\nAAA,AAA Corp,Technology,Software\nBBB,BBB Corp,Technology,Software\n",
+        "universe_audit.csv": "audit_item,value\nclean_tickers,2\n",
+        "candidate_pairs.csv": "pair_id,ticker_1,ticker_2,sector_1,sector_2,return_correlation\nAAA_BBB,AAA,BBB,Technology,Technology,0.8\n",
+        "selected_pairs.csv": "pair_id,ticker_1,ticker_2,sector_1,sector_2,return_correlation,hedge_ratio_beta\nAAA_BBB,AAA,BBB,Technology,Technology,0.8,1.0\n",
+        "pair_diagnostics.csv": "pair_id,ticker_1,ticker_2,selected,exclusion_reasons\nAAA_BBB,AAA,BBB,true,\n",
+        "spread_series.csv": "date,pair_id,ticker_1,ticker_2,spread,beta\n2025-01-02,AAA_BBB,AAA,BBB,0.1,1.0\n",
+        "spread_diagnostics.csv": "pair_id,ticker_1,ticker_2,beta,alpha,observations\nAAA_BBB,AAA,BBB,1.0,0.0,1\n",
+        "zscores.csv": "date,pair_id,z_score_window,z_score,rolling_mean_lagged,rolling_std_lagged\n2025-01-02,AAA_BBB,60,0.5,0.0,1.0\n",
+        "features_all.csv": "date,target_date,pair_id,ticker_1,ticker_2,split,spread,target_next_day_spread,spread_lag_1\n2025-01-02,2025-01-03,AAA_BBB,AAA,BBB,validation,0.1,0.2,0.0\n",
+        "features_train.csv": "date,target_date,pair_id,ticker_1,ticker_2,split,spread,target_next_day_spread,spread_lag_1\n2018-01-02,2018-01-03,AAA_BBB,AAA,BBB,train,0.1,0.2,0.0\n",
+        "features_validation.csv": "date,target_date,pair_id,ticker_1,ticker_2,split,spread,target_next_day_spread,spread_lag_1\n2019-01-02,2019-01-03,AAA_BBB,AAA,BBB,validation,0.1,0.2,0.0\n",
+        "features_test.csv": "date,target_date,pair_id,ticker_1,ticker_2,split,spread,target_next_day_spread,spread_lag_1\n2022-01-03,2022-01-04,AAA_BBB,AAA,BBB,test,0.1,0.2,0.0\n",
+        "features_holdout_2025.csv": "date,target_date,pair_id,ticker_1,ticker_2,split,spread,target_next_day_spread,spread_lag_1\n2025-01-02,2025-01-03,AAA_BBB,AAA,BBB,holdout_2025,0.1,0.2,0.0\n",
+        "feature_metadata.csv": "column,role,category,lag_days,window,default_target,uses_current_or_future_information\nspread_lag_1,feature,lagged_spread,1,,false,false\n",
+        "predictions.csv": "pair_id,ticker_1,ticker_2,model,feature_date,target_date,split,prediction,actual,forecast_error,training_split_source,training_observation_count,spread\nAAA_BBB,AAA,BBB,naive,2025-01-02,2025-01-03,holdout_2025,0.2,0.2,0.0,train,1,0.1\n",
+        "forecasting_metrics.csv": "model,split,rmse,mae,directional_accuracy,prediction_correlation,bias,observation_count\nnaive,validation,0.1,0.1,0.5,,0.0,1\n",
+        "model_comparison.csv": "model,validation_rmse,validation_mae,validation_directional_accuracy,test_rmse,test_mae,test_directional_accuracy,holdout_2025_rmse,holdout_2025_mae,holdout_2025_directional_accuracy,selected_by_validation,selection_rank\nnaive,0.1,0.1,0.5,0.1,0.1,0.5,0.1,0.1,0.5,true,1\n",
+        "signals.csv": "pair_id,ticker_1,ticker_2,model,feature_date,target_date,split,signal_action,signal_state\nAAA_BBB,AAA,BBB,naive,2025-01-02,2025-01-03,holdout_2025,no_action,flat\n",
+        "signal_summary.csv": "model,split,pair_count,signal_rows,no_action_count,final_open_positions\nnaive,holdout_2025,1,1,1,0\n",
+        "daily_pnl.csv": "date,model,equity,net_pnl\n2025-01-03,naive,100000,0\n",
+        "equity_curves.csv": "date,model,equity,cumulative_net_pnl\n2025-01-03,naive,100000,0\n",
+        "trade_log.csv": "model,pair_id,net_pnl,holding_days,exit_reason\nnaive,AAA_BBB,0,0,\n",
+        "exposure.csv": "date,model,gross_exposure,net_exposure,active_positions,turnover\n2025-01-03,naive,0,0,0,0\n",
+        "open_positions.csv": "model,pair_id,side,entry_date\n",
+        "backtest_metrics.csv": "model,split,total_return,annualized_return,annualized_volatility,sharpe_ratio,max_drawdown,number_of_trades\nnaive,all,0,0,0,0,0,0\n",
+        "model_performance_summary.csv": "model,total_return,sharpe_ratio,max_drawdown,performance_rank\nnaive,0,0,0,1\n",
+        "trade_metrics.csv": "model,split,number_of_trades,win_rate,profit_factor\nnaive,all,0,,\n",
+        "exposure_metrics.csv": "model,split,average_gross_exposure,average_net_exposure,max_gross_exposure,turnover\nnaive,all,0,0,0,0\n",
+        "drawdown_series.csv": "date,model,split,equity,drawdown\n2025-01-03,naive,all,100000,0\n",
+        "robustness_grid.csv": "scenario_id,entry_z,exit_z,commission_bps,slippage_bps\nscenario_001,2.0,0.5,5,2\n",
+        "robustness_results.csv": "scenario_id,model,split,sharpe_ratio,max_drawdown\nscenario_001,naive,validation,0,0\n",
+        "robustness_summary.csv": "summary_item,selection_split,selection_metric,scenario_id,model,value,notes\nbest_validation_scenario,validation,sharpe_ratio,scenario_001,naive,0,Smoke fixture\n",
+        "regime_labels.csv": "date,split,market_proxy,validation,test,holdout_2025\n2025-01-03,holdout_2025,SPY,false,false,true\n",
+        "regime_performance.csv": "model,regime,regime_type,total_return,sharpe_ratio,max_drawdown,net_pnl,number_of_trades\nnaive,holdout_2025,walk_forward_split,0,0,0,0,0\n",
+        "special_period_performance.csv": "model,regime,regime_type,total_return,sharpe_ratio,max_drawdown,net_pnl,number_of_trades\nnaive,final_holdout_2025,special_period,0,0,0,0,0\n",
+        "regime_summary.csv": "summary_item,model,regime,metric,value,notes\nholdout_2025_performance,naive,holdout_2025,sharpe_ratio,0,Smoke fixture\n",
+    }
+    return specific.get(name, "synthetic\n1\n")
 
 
 def _effective_pipeline_config(

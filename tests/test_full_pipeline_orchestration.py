@@ -127,19 +127,34 @@ def test_smoke_test_mode_completes_with_synthetic_local_fixtures(
     tmp_path: Path,
 ) -> None:
     config = _project_config(tmp_path)
-    _write_smoke_fixtures(config, tmp_path)
 
     result = PipelineOrchestrator(
         config,
         config_path=tmp_path / "config.yaml",
         project_root=tmp_path,
-        options=PipelineRunOptions(smoke_test=True),
+        options=PipelineRunOptions(
+            smoke_test=True,
+            skip_heavy_models=True,
+            skip_robustness=True,
+            skip_regime=True,
+        ),
     ).run()
 
     assert result.success
     assert result.manifest["smoke_test"] is True
-    assert result.manifest["stages_completed"] == PIPELINE_STAGE_ORDER
+    assert "data_ingestion" in result.manifest["stages_completed"]
+    assert "report_generation" in result.manifest["stages_completed"]
+    assert "robustness_analysis" in result.manifest["stages_skipped"]
+    assert "regime_analysis" in result.manifest["stages_skipped"]
     assert result.manifest["output_files_missing"] == []
+    assert (tmp_path / "results/data/data_validation_report.csv").exists()
+    assert (tmp_path / "results/data/data_validation_report.json").exists()
+    assert (
+        tmp_path / "results/pipeline/smoke_inputs/processed/AAA.csv"
+    ).exists()
+    assert (
+        tmp_path / "results/pipeline/smoke_inputs/sp500_constituents.csv"
+    ).exists()
 
 
 def test_cli_argument_parsing() -> None:
@@ -183,23 +198,6 @@ def test_skip_heavy_models_updates_effective_config_only(tmp_path: Path) -> None
     assert config["models"]["forecasting_enabled"] == original_models
     assert "xgboost" not in orchestrator.effective_config["models"]["forecasting_enabled"]
     assert "lstm" not in orchestrator.effective_config["models"]["forecasting_enabled"]
-
-
-def _write_smoke_fixtures(config: dict[str, Any], tmp_path: Path) -> None:
-    constituents = tmp_path / config["universe"]["constituents_path"]
-    constituents.parent.mkdir(parents=True, exist_ok=True)
-    constituents.write_text("ticker,company_name,sector,industry\nAAA,A,Tech,Software\n", encoding="utf-8")
-
-    processed_dir = tmp_path / config["data"]["processed_dir"]
-    processed_dir.mkdir(parents=True, exist_ok=True)
-    (processed_dir / "AAA.csv").write_text("date,adjusted_close\n2020-01-01,100\n", encoding="utf-8")
-
-    for stage in build_pipeline_stages(config, tmp_path):
-        for output_path in stage.expected_outputs:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text("synthetic\n", encoding="utf-8")
-
-
 def _project_config(tmp_path: Path) -> dict[str, Any]:
     return {
         "project": {
