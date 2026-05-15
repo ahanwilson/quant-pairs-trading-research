@@ -1,18 +1,18 @@
 # Quant Pairs Trading Research
 
-Initial Python skeleton for a cointegration-based pairs trading strategy research project.
+Python research pipeline for a cointegration-based pairs trading strategy research project.
 
-The project is designed to grow into a full strategy quant research pipeline that evaluates whether forecasting models improve pairs trading performance when predicting hedge-ratio-adjusted spreads. The data configuration targets daily equity OHLCV data from `2008-01-01` through `2025-12-31`, using adjusted close prices for return and spread calculations.
+The project implements a full strategy quant research pipeline that evaluates whether forecasting models improve pairs trading performance when predicting hedge-ratio-adjusted spreads. The data configuration targets daily equity OHLCV data from `2008-01-01` through `2025-12-31`, using adjusted close prices for return and spread calculations.
 
 This repository is a strategy research project, not an academic literature review. The final report should focus on implementation, testing, backtesting, risk, robustness, regimes, and deployment considerations.
 
 ## Current Scope
 
-This initial skeleton includes:
+The repository currently includes:
 
 - `config.yaml` with project defaults and report guardrails.
 - A clean `src/` based `quant_pairs` package.
-- Placeholder subpackages for data, universe, pairs, spreads, features, models, signals, backtest, analytics, robustness, regimes, and reporting.
+- Implemented subpackages for data, universe, pairs, spreads, features, models, signals, backtest, analytics, robustness, regimes, and reporting.
 - A config loader in `quant_pairs.config`.
 - A full pipeline orchestration entry point in `scripts/run_full_research.py`.
 - A data ingestion and validation entry point in `scripts/run_data_pipeline.py`.
@@ -28,7 +28,7 @@ This initial skeleton includes:
 - A robustness analysis entry point in `scripts/run_robustness_analysis.py`.
 - A regime analysis entry point in `scripts/run_regime_analysis.py`.
 - A final report generation entry point in `scripts/run_report_generation.py`.
-- Basic tests for package imports and config loading.
+- Tests covering local/synthetic module workflows, config loading, package imports, and reproducibility checks.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
@@ -539,6 +539,31 @@ src/
 
 ## Report Guardrails
 
-The future report should include strategy research sections such as executive summary, methodology, forecasting results, trading performance, robustness, regime analysis, risk analysis, limitations, deployment considerations, and conclusion.
+The report should include strategy research sections such as executive summary, methodology, forecasting results, trading performance, robustness, regime analysis, risk analysis, limitations, deployment considerations, and conclusion.
 
 Do not include literature review, references, academic citations, bibliography, or citation management.
+
+## Reproducibility / Quick Start
+
+Clone the repository, create a local virtual environment, install dependencies, install the package in editable mode, and run the lightweight validation commands:
+
+```powershell
+git clone https://github.com/ahanwilson/quant-pairs-trading-research.git
+cd quant-pairs-trading-research
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install -e .
+python -m pytest
+python scripts\check_reproducibility.py
+python scripts\run_full_research.py --config config.yaml --dry-run
+python scripts\run_full_research.py --config config.yaml --smoke-test --skip-heavy-models --skip-robustness --skip-regime
+```
+
+The full pipeline entry point is:
+
+```powershell
+python scripts\run_full_research.py --config config.yaml
+```
+
+Full real-data execution can require internet access for market data, a populated `data/universe/sp500_constituents.csv`, and enough runtime for forecasting, robustness, regime, and report stages. Generated data and results are written under ignored `data/raw/`, `data/processed/`, and `results/` subdirectories so source control stays clean.
