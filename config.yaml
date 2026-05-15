@@ -190,12 +190,18 @@ forecasting:
   default_signal_model: best_validation
 
 signals:
-  source: predicted_next_day_spread_z_score
-  entry_z_score: 2.0
-  exit_z_score: 0.5
-  stop_loss_z_score: 3.0
+  signal_model: best_validation
+  entry_z: 2.0
+  exit_z: 0.5
+  stop_loss_z: 3.0
   max_holding_days: 60
-  sizing: hedge_ratio_aware_dollar_neutral
+  generate_train_signals: false
+  use_predicted_spread: true
+  use_predicted_zscore: true
+  z_score_window: 60
+  output_dir: results/signals
+  signals_file: signals.csv
+  summary_file: signal_summary.csv
 
 backtest:
   method: walk_forward_out_of_sample

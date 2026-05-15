@@ -22,13 +22,13 @@ This initial skeleton includes:
 - A feature engineering entry point in `scripts/run_feature_engineering.py`.
 - A baseline forecasting entry point in `scripts/run_forecasting_baselines.py`.
 - A forecast comparison entry point in `scripts/run_forecast_comparison.py`.
+- A signal generation entry point in `scripts/run_signal_generation.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
 - Kalman Filter forecasting.
-- Signal generation.
 - Backtesting.
 - Analytics, robustness, regimes, or report generation.
 
@@ -226,6 +226,41 @@ forecasting:
 ```
 
 `model_comparison.csv` reports validation, test, and 2025 holdout metrics side by side, but `selected_by_validation` and `selection_rank` are based only on the configured validation metric. Test and holdout rows are evaluation-only and are not used to choose a model.
+
+## Run Signal Generation
+
+After forecast predictions, model comparison, spread series, z-scores, and selected pairs exist, generate trading action records with:
+
+```powershell
+python scripts/run_signal_generation.py --config config.yaml
+```
+
+By default, this step reads:
+
+- `results/forecasts/predictions.csv`
+- `results/forecasts/model_comparison.csv`
+- `results/spreads/spread_series.csv`
+- `results/spreads/zscores.csv`
+- `results/pairs/selected_pairs.csv`
+
+Outputs are written under `results/signals/`:
+
+- `signals.csv`
+- `signal_summary.csv`
+
+Signal generation uses `signals.signal_model`, which defaults to `best_validation`. In that mode, the model is selected from validation comparison metrics only; test and 2025 holdout metrics are not used for model selection. A specific model such as `xgboost` or `lstm` can also be configured.
+
+The signal layer emits daily per-pair action and state records: entries, holds, exits, stop losses, max-holding exits, and no-action rows. It uses predicted next-day spread z-scores when available, or computes them from predicted spreads and lagged rolling z-score statistics. It does not calculate PnL, equity curves, portfolio sizing, backtest metrics, robustness analysis, regime analysis, or reports.
+
+```yaml
+signals:
+  signal_model: best_validation
+  entry_z: 2.0
+  exit_z: 0.5
+  stop_loss_z: 3.0
+  max_holding_days: 60
+  generate_train_signals: false
+```
 
 ## Config Defaults
 

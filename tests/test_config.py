@@ -78,6 +78,15 @@ def test_load_config_from_repository_root() -> None:
     assert config["forecasting"]["model_selection_split"] == "validation"
     assert config["forecasting"]["model_selection_direction"] == "minimize"
     assert config["forecasting"]["default_signal_model"] == "best_validation"
+    assert config["signals"]["signal_model"] == "best_validation"
+    assert config["signals"]["entry_z"] == 2.0
+    assert config["signals"]["exit_z"] == 0.5
+    assert config["signals"]["stop_loss_z"] == 3.0
+    assert config["signals"]["max_holding_days"] == 60
+    assert config["signals"]["generate_train_signals"] is False
+    assert config["signals"]["output_dir"] == "results/signals"
+    assert config["signals"]["signals_file"] == "signals.csv"
+    assert config["signals"]["summary_file"] == "signal_summary.csv"
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:
