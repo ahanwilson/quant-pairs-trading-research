@@ -22,6 +22,7 @@ REQUIRED_TOP_LEVEL_KEYS = (
     "forecasting",
     "signals",
     "backtest",
+    "analytics",
     "robustness",
     "regimes",
     "reporting",

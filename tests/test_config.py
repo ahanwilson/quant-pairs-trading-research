@@ -96,6 +96,9 @@ def test_load_config_from_repository_root() -> None:
     assert config["backtest"]["max_active_pairs"] == 20
     assert config["backtest"]["generate_train_backtest"] is False
     assert config["backtest"]["output_dir"] == "results/backtests"
+    assert config["analytics"]["risk_free_rate"] == 0.0
+    assert config["analytics"]["trading_days_per_year"] == 252
+    assert config["analytics"]["output_dir"] == "results/analytics"
 
 
 def test_missing_config_raises_clear_error(tmp_path: Path) -> None:

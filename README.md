@@ -24,13 +24,14 @@ This initial skeleton includes:
 - A forecast comparison entry point in `scripts/run_forecast_comparison.py`.
 - A signal generation entry point in `scripts/run_signal_generation.py`.
 - A walk-forward-compatible backtest entry point in `scripts/run_backtest.py`.
+- A performance analytics entry point in `scripts/run_performance_analytics.py`.
 - Basic tests for package imports and config loading.
 - Explicit walk-forward defaults for initial training, validation, test, and final 2025 holdout windows.
 
 Not implemented yet:
 
 - Kalman Filter forecasting.
-- Analytics, robustness, regimes, or report generation.
+- Robustness, regimes, or report generation.
 
 ## Setup
 
@@ -304,6 +305,40 @@ backtest:
 ```
 
 This step simulates positions, costs, daily PnL, equity, exposure, turnover, and trade logs only. It does not compute performance analytics, robustness tests, regime analysis, or final reports.
+
+## Run Performance Analytics
+
+After backtest outputs exist, compute performance, trade, exposure, and drawdown analytics with:
+
+```powershell
+python scripts/run_performance_analytics.py --config config.yaml
+```
+
+By default, this step reads:
+
+- `results/backtests/daily_pnl.csv`
+- `results/backtests/equity_curves.csv`
+- `results/backtests/trade_log.csv`
+- `results/backtests/exposure.csv`
+
+Outputs are written under `results/analytics/`:
+
+- `backtest_metrics.csv`
+- `model_performance_summary.csv`
+- `trade_metrics.csv`
+- `exposure_metrics.csv`
+- `drawdown_series.csv`
+
+Performance analytics computes model-level return, volatility, Sharpe, Sortino, drawdown, Calmar, trade, and exposure metrics. If backtest inputs include a `split` column, split-level rows are also produced for `validation`, `test`, and `holdout_2025` or any other split values present. The current v1 backtest outputs do not include split columns, so the default analytics output contains model-level `all` rows only.
+
+```yaml
+analytics:
+  risk_free_rate: 0.0
+  trading_days_per_year: 252
+  output_dir: results/analytics
+```
+
+This step does not run robustness analysis, regime analysis, or final report generation.
 
 ## Config Defaults
 
