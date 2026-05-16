@@ -49,11 +49,88 @@ For editable package development:
 python -m pip install -e .
 ```
 
+Editable install is recommended during development so local changes under `src/` are used by Python imports.
+
 ## Run Tests
 
 ```powershell
 pytest
 ```
+
+## Real-Data Universe and Ticker Setup
+
+The real-data research pipeline is designed to use the current S&P 500 universe by default.
+
+This repository includes a default current-S&P-500 constituent universe file:
+
+```text
+data/universe/sp500_constituents.csv
+```
+
+The required columns are:
+
+```csv
+ticker,company_name,sector,industry
+```
+
+The base `config.yaml` intentionally leaves `data.tickers` empty:
+
+```yaml
+data:
+  source: yfinance
+  tickers: []
+```
+
+When `data.tickers` is empty, the data pipeline automatically loads tickers from `universe.constituents_path`, which points by default to:
+
+```text
+data/universe/sp500_constituents.csv
+```
+
+This means the default real-data workflow uses the included S&P 500 universe file without requiring users to manually copy hundreds of tickers into `config.yaml`.
+
+To run the default S&P 500 workflow from a fresh clone:
+
+```powershell
+python scripts/run_full_research.py --config config.yaml
+```
+
+Before starting a new full real-data run, you may clear generated outputs while keeping the universe metadata and cached market data:
+
+```powershell
+Remove-Item -Recurse -Force results -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force .tmp
+$env:TMP = "$PWD\.tmp"
+$env:TEMP = "$PWD\.tmp"
+```
+
+Do not delete `data/universe/sp500_constituents.csv`. Do not delete `data/raw/` or `data/processed/` unless you intentionally want to redownload market data.
+
+### Custom universe
+
+Users can replace the default S&P 500 universe with a custom universe.
+
+To use a custom universe:
+
+1. Create a CSV with the same required columns:
+
+```csv
+ticker,company_name,sector,industry
+```
+
+2. Point `universe.constituents_path` to that CSV.
+3. Either leave `data.tickers` empty to load tickers from that CSV, or explicitly set `data.tickers` to override the universe-derived ticker list.
+4. Make sure each sector has enough tickers for same-sector pair selection.
+
+A very small universe may produce zero selected pairs. If `selected_pairs.csv` has zero rows, downstream forecasting, signal generation, backtesting, and report generation may not have usable strategy outputs.
+
+### Common setup errors
+
+If `data.tickers` is empty and `universe.constituents_path` is missing, the data pipeline fails with a setup error.
+
+If the universe CSV is missing required columns, the data pipeline fails before downloading market data.
+
+For the default research workflow, use the included current S&P 500 universe file.
 
 ## Run Full Research Pipeline
 
@@ -77,7 +154,7 @@ The full runner orchestrates the existing pipeline stages in order:
 12. regime analysis
 13. final report generation
 
-Full real-data execution can take time and may require internet access or pre-cached market data, depending on the configured data source and cache state. It also assumes all upstream local inputs are available, such as `data/universe/sp500_constituents.csv` and processed price history when later stages are requested.
+Full real-data execution can take time and may require internet access or pre-cached market data, depending on the configured data source and cache state. The default real-data workflow uses the included `data/universe/sp500_constituents.csv` file when `data.tickers` is empty.
 
 The runner writes a manifest to:
 
@@ -116,9 +193,15 @@ Dry-run mode does not require internet access and does not download market data.
 
 ## Run Data Pipeline
 
-The v1 data pipeline uses `yfinance` to download daily OHLCV data for tickers listed in `config.yaml`.
+The v1 data pipeline uses `yfinance` to download daily OHLCV data.
 
-Edit `data.tickers` before running:
+By default, `config.yaml` leaves `data.tickers` empty and the pipeline loads tickers from the included S&P 500 universe file:
+
+```text
+data/universe/sp500_constituents.csv
+```
+
+To override the default universe-derived ticker list, explicitly set `data.tickers`:
 
 ```yaml
 data:
@@ -146,13 +229,15 @@ The v1 universe defaults to current S&P 500 constituents loaded from:
 data/universe/sp500_constituents.csv
 ```
 
-Create that CSV with these columns:
+The repository includes this default universe file. It must have these columns:
 
 ```csv
 ticker,company_name,sector,industry
 ```
 
-Then make sure processed price data exists under `data/processed/`, typically by running the data pipeline first for the desired tickers.
+Users may replace this file or point `universe.constituents_path` to another CSV with the same schema.
+
+Make sure processed price data exists under `data/processed/`, typically by running the data pipeline first for the desired tickers.
 
 Run:
 
@@ -566,4 +651,4 @@ The full pipeline entry point is:
 python scripts\run_full_research.py --config config.yaml
 ```
 
-Full real-data execution can require internet access for market data, a populated `data/universe/sp500_constituents.csv`, and enough runtime for forecasting, robustness, regime, and report stages. Generated data and results are written under ignored `data/raw/`, `data/processed/`, and `results/` subdirectories so source control stays clean.
+Full real-data execution can require internet access for market data and enough runtime for forecasting, robustness, regime, and report stages. The default current-S&P-500 universe is included at `data/universe/sp500_constituents.csv`. Generated market data and results are written under ignored `data/raw/`, `data/processed/`, and `results/` subdirectories so source control stays clean.

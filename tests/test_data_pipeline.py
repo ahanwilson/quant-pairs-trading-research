@@ -92,3 +92,115 @@ def test_pipeline_uses_raw_cache_on_repeated_runs(tmp_path) -> None:
     pipeline.run()
 
     assert source.download_count == 1
+
+def base_project_config(tmp_path, tickers):
+    return {
+        "data": {
+            "source": "fake",
+            "tickers": tickers,
+            "start_date": "2020-01-01",
+            "end_date": "2020-01-07",
+            "frequency": "daily",
+            "price_field": "adjusted_close",
+            "raw_dir": "data/raw",
+            "processed_dir": "data/processed",
+            "cache_enabled": True,
+            "validation": {
+                "report_dir": "results/data",
+                "min_history_days": 5,
+                "max_missing_fraction": 0.20,
+                "required_columns": [
+                    "date",
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "adjusted_close",
+                    "volume",
+                ],
+            },
+        },
+        "universe": {
+            "constituents_path": "data/universe/sp500_constituents.csv",
+        },
+    }
+
+
+def write_constituents(tmp_path, rows):
+    path = tmp_path / "data" / "universe" / "sp500_constituents.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(rows).to_csv(path, index=False)
+    return path
+
+
+def test_data_config_uses_explicit_tickers_before_universe_file(tmp_path) -> None:
+    config = base_project_config(tmp_path, ["msft"])
+    write_constituents(
+        tmp_path,
+        [
+            {
+                "ticker": "AAPL",
+                "company_name": "Apple Inc.",
+                "sector": "Information Technology",
+                "industry": "Technology Hardware",
+            }
+        ],
+    )
+
+    data_config = DataPipelineConfig.from_project_config(config, project_root=tmp_path)
+
+    assert data_config.tickers == ("MSFT",)
+
+
+def test_data_config_loads_tickers_from_universe_when_empty(tmp_path) -> None:
+    config = base_project_config(tmp_path, [])
+    write_constituents(
+        tmp_path,
+        [
+            {
+                "ticker": "aapl",
+                "company_name": "Apple Inc.",
+                "sector": "Information Technology",
+                "industry": "Technology Hardware",
+            },
+            {
+                "ticker": "msft",
+                "company_name": "Microsoft Corp.",
+                "sector": "Information Technology",
+                "industry": "Software",
+            },
+        ],
+    )
+
+    data_config = DataPipelineConfig.from_project_config(config, project_root=tmp_path)
+
+    assert data_config.tickers == ("AAPL", "MSFT")
+
+
+def test_data_config_errors_when_empty_tickers_and_missing_universe(tmp_path) -> None:
+    config = base_project_config(tmp_path, [])
+
+    try:
+        DataPipelineConfig.from_project_config(config, project_root=tmp_path)
+    except ValueError as exc:
+        assert "No tickers configured for data ingestion" in str(exc)
+        assert "universe.constituents_path" in str(exc)
+    else:
+        raise AssertionError("Expected missing universe constituent file to fail")
+
+
+def test_data_config_validates_universe_columns(tmp_path) -> None:
+    config = base_project_config(tmp_path, [])
+    path = tmp_path / "data" / "universe" / "sp500_constituents.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame([{"ticker": "AAPL"}]).to_csv(path, index=False)
+
+    try:
+        DataPipelineConfig.from_project_config(config, project_root=tmp_path)
+    except ValueError as exc:
+        assert "missing required columns" in str(exc)
+        assert "company_name" in str(exc)
+        assert "sector" in str(exc)
+        assert "industry" in str(exc)
+    else:
+        raise AssertionError("Expected invalid universe constituent file to fail")

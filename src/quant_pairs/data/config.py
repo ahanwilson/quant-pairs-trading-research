@@ -57,9 +57,11 @@ class DataPipelineConfig:
             )
         )
 
+        tickers = _configured_tickers(config, root)
+
         return cls(
             source=str(data_config.get("source", "yfinance")).lower(),
-            tickers=tuple(str(ticker).upper() for ticker in data_config.get("tickers", ())),
+            tickers=tickers,
             start_date=pd.Timestamp(str(data_config["start_date"])).normalize(),
             end_date=pd.Timestamp(str(data_config["end_date"])).normalize(),
             frequency=str(data_config.get("frequency", "daily")).lower(),
@@ -76,6 +78,58 @@ class DataPipelineConfig:
                 required_columns=required_columns,
             ),
         )
+
+
+def _configured_tickers(config: Mapping[str, Any], project_root: Path) -> tuple[str, ...]:
+    """Resolve data-ingestion tickers from data.tickers or the universe CSV.
+
+    Explicit ``data.tickers`` always wins. If it is empty, the default real-data
+    workflow falls back to ``universe.constituents_path`` and loads the ``ticker``
+    column from that CSV.
+    """
+
+    data_config = config["data"]
+    explicit_tickers = tuple(
+        str(ticker).strip().upper()
+        for ticker in data_config.get("tickers", ())
+        if str(ticker).strip()
+    )
+    if explicit_tickers:
+        return explicit_tickers
+
+    universe_config = config.get("universe", {})
+    constituents_path = universe_config.get("constituents_path")
+    if not constituents_path:
+        return explicit_tickers
+
+    csv_path = _resolve_path(project_root, constituents_path)
+    if not csv_path.exists():
+        raise ValueError(
+            "No tickers configured for data ingestion and universe constituent file "
+            f"was not found at {csv_path}. Populate data.tickers or create the "
+            "configured universe.constituents_path CSV."
+        )
+
+    constituents = pd.read_csv(csv_path)
+    required_columns = {"ticker", "company_name", "sector", "industry"}
+    missing_columns = required_columns.difference(constituents.columns)
+    if missing_columns:
+        missing = ", ".join(sorted(missing_columns))
+        raise ValueError(
+            f"Universe constituent file {csv_path} is missing required columns: {missing}"
+        )
+
+    tickers = tuple(
+        str(ticker).strip().upper()
+        for ticker in constituents["ticker"].dropna()
+        if str(ticker).strip()
+    )
+    if not tickers:
+        raise ValueError(
+            f"Universe constituent file {csv_path} does not contain any tickers."
+        )
+
+    return tickers
 
 
 def _resolve_path(project_root: Path, configured_path: str | Path) -> Path:
