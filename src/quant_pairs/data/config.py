@@ -100,7 +100,11 @@ def _configured_tickers(config: Mapping[str, Any], project_root: Path) -> tuple[
     universe_config = config.get("universe", {})
     constituents_path = universe_config.get("constituents_path")
     if not constituents_path:
-        return explicit_tickers
+        raise ValueError(
+            "No tickers configured for data ingestion and no "
+            "universe.constituents_path was configured. Populate data.tickers "
+            "or configure universe.constituents_path."
+        )
 
     csv_path = _resolve_path(project_root, constituents_path)
     if not csv_path.exists():
